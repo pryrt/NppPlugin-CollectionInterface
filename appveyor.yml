@@ -30,39 +30,39 @@ install:
 
 build_script:
     - cd "%APPVEYOR_BUILD_FOLDER%"/vs.proj
-    - msbuild NppPluginTemplate.vcxproj /m /p:configuration="%configuration%" /p:platform="%platform_input%" /p:PlatformToolset="%PlatformToolset%" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    - msbuild CollectionInterface.vcxproj /m /p:configuration="%configuration%" /p:platform="%platform_input%" /p:PlatformToolset="%PlatformToolset%" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 after_build:
     - cd "%APPVEYOR_BUILD_FOLDER%"
     - ps: >-
 
         if ($env:PLATFORM_INPUT -eq "x64" -and $env:CONFIGURATION -eq "Release") {
-            Push-AppveyorArtifact "bin64\NppPluginTemplate.dll" -FileName NppPluginTemplate.dll
+            Push-AppveyorArtifact "bin64\CollectionInterface.dll" -FileName CollectionInterface.dll
         }
 
         if ($env:PLATFORM_INPUT -eq "Win32" -and $env:CONFIGURATION -eq "Release") {
-            Push-AppveyorArtifact "bin\NppPluginTemplate.dll" -FileName NppPluginTemplate.dll
+            Push-AppveyorArtifact "bin\CollectionInterface.dll" -FileName CollectionInterface.dll
         }
 
         if ($env:PLATFORM_INPUT -eq "arm64" -and $env:CONFIGURATION -eq "Release") {
-            Push-AppveyorArtifact "arm64\NppPluginTemplate.dll" -FileName NppPluginTemplate.dll
+            Push-AppveyorArtifact "arm64\CollectionInterface.dll" -FileName CollectionInterface.dll
         }
 
         if ($($env:APPVEYOR_REPO_TAG) -eq "true" -and $env:CONFIGURATION -eq "Release" -and $env:PLATFORMTOOLSET -eq "v143") {
             if($env:PLATFORM_INPUT -eq "x64"){
-                $ZipFileName = "NppPluginTemplate_$($env:APPVEYOR_REPO_TAG_NAME)_x64.zip"
+                $ZipFileName = "CollectionInterface_$($env:APPVEYOR_REPO_TAG_NAME)_x64.zip"
                 Remove-Item bin64\*.ipdb
                 Remove-Item bin64\*.iobj
                 7z a $ZipFileName "$($env:APPVEYOR_BUILD_FOLDER)\bin64\*"
             }
             if($env:PLATFORM_INPUT -eq "Win32"){
-                $ZipFileName = "NppPluginTemplate_$($env:APPVEYOR_REPO_TAG_NAME)_x86.zip"
+                $ZipFileName = "CollectionInterface_$($env:APPVEYOR_REPO_TAG_NAME)_x86.zip"
                 Remove-Item bin\*.ipdb
                 Remove-Item bin\*.iobj
                 7z a $ZipFileName "$($env:APPVEYOR_BUILD_FOLDER)\bin\*"
             }
             if($env:PLATFORM_INPUT -eq "arm64"){
-                $ZipFileName = "NppPluginTemplate_$($env:APPVEYOR_REPO_TAG_NAME)_arm64.zip"
+                $ZipFileName = "CollectionInterface_$($env:APPVEYOR_REPO_TAG_NAME)_arm64.zip"
                 Remove-Item arm64\*.ipdb
                 Remove-Item arm64\*.iobj
                 7z a $ZipFileName "$($env:APPVEYOR_BUILD_FOLDER)\arm64\*"
@@ -70,7 +70,7 @@ after_build:
         }
 
 artifacts:
-  - path: NppPluginTemplate_*.zip
+  - path: CollectionInterface_*.zip
     name: releases
 
 deploy:
