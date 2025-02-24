@@ -8,10 +8,11 @@ vs.proj/Debug
 vs.proj/Release
 vs.proj/x64
 vs.proj/ARM64
-vs.proj/NppPluginTemplate.opensdf
-vs.proj/NppPluginTemplate.exp
-vs.proj/NppPluginTemplate.lib
-vs.proj/NppPluginTemplate.vcxproj.user
+vs.proj/Collecti.*
+vs.proj/*.opensdf
+vs.proj/*.exp
+vs.proj/*.lib
+vs.proj/*.vcxproj.user
 vs.proj/.vs/
 *.aps
 *.zip
