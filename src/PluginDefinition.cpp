@@ -20,6 +20,8 @@
 #include "resource.h"
 #include "AboutDialog.h"
 
+static HANDLE _hModule;
+
 //
 // The plugin data that Notepad++ needs
 //
@@ -33,8 +35,9 @@ NppData nppData;
 //
 // Initialize your plugin data here
 // It will be called while plugin loading   
-void pluginInit(HANDLE /*hModule*/)
+void pluginInit(HANDLE hModule)
 {
+    _hModule = hModule;
 }
 
 //
@@ -121,7 +124,6 @@ void helloDlg()
 
 void showAbout()
 {
-    HANDLE _hModule = NULL;
     HWND hSelf = CreateDialogParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_ABOUTDLG), nppData._nppHandle, (DLGPROC)abtDlgProc, (LPARAM)NULL);
 
     // Find Center and then position the window:
