@@ -35,6 +35,29 @@ INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 		//ConvertStaticToHyperlink(hwndDlg, IDC_README);
 		//Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), TEXT("DoxyIt v") VERSION_TEXT TEXT(" ") VERSION_STAGE TEXT(" ") BITNESS);
 		Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), TEXT("CollectionInterface v???"));
+
+		if (1) {
+			// Find Center and then position the window:
+
+			// find App center
+			RECT rc;
+			HWND hParent = GetParent(hwndDlg);
+			::GetClientRect(hParent, &rc);
+			POINT center;
+			int w = rc.right - rc.left;
+			int h = rc.bottom - rc.top;
+			center.x = rc.left + w / 2;
+			center.y = rc.top + h / 2;
+			::ClientToScreen(hParent, &center);
+
+			// and position dialog
+			RECT dlgRect;
+			::GetClientRect(hwndDlg, &dlgRect);
+			int x = center.x - (dlgRect.right - dlgRect.left) / 2;
+			int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
+			::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
+		}
+
 		return true;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {

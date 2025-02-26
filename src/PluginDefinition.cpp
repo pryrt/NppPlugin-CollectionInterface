@@ -66,7 +66,8 @@ void commandMenuInit()
     setCommand(0, TEXT("Hello Notepad++"), hello, NULL, false);
     setCommand(1, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
     setCommand(2, TEXT(""), NULL, NULL, false);
-    setCommand(3, TEXT("About..."), showAbout, NULL, false);
+    setCommand(3, TEXT("About (NonModal)"), showAbout, NULL, false);
+    setCommand(4, TEXT("About (Modal)"), showAboutModal, NULL, false);
 }
 
 //
@@ -124,8 +125,9 @@ void helloDlg()
 
 void showAbout()
 {
-    HWND hSelf = CreateDialogParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_ABOUTDLG), nppData._nppHandle, (DLGPROC)abtDlgProc, (LPARAM)NULL);
+    CreateDialogParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_ABOUTDLG), nppData._nppHandle, (DLGPROC)abtDlgProc, (LPARAM)NULL);
 
+#if 0
     // Find Center and then position the window:
 
     // find App center
@@ -144,5 +146,34 @@ void showAbout()
     int x = center.x - (dlgRect.right - dlgRect.left) / 2;
     int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
     ::SetWindowPos(hSelf, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
+#endif
+}
+
+void showAboutModal()
+{
+    DialogBoxParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_ABOUTDLG), nppData._nppHandle, (DLGPROC)abtDlgProc, (LPARAM)NULL);
+    return;
+
+#if 0
+    HWND hSelf;
+    // Find Center and then position the window:
+
+    // find App center
+    RECT rc;
+    ::GetClientRect(nppData._nppHandle, &rc);
+    POINT center;
+    int w = rc.right - rc.left;
+    int h = rc.bottom - rc.top;
+    center.x = rc.left + w / 2;
+    center.y = rc.top + h / 2;
+    ::ClientToScreen(nppData._nppHandle, &center);
+
+    // and position dialog
+    RECT dlgRect;
+    ::GetClientRect(hSelf, &dlgRect);
+    int x = center.x - (dlgRect.right - dlgRect.left) / 2;
+    int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
+    ::SetWindowPos(hSelf, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
+#endif
 
 }
