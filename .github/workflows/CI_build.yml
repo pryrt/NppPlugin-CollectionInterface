@@ -21,10 +21,9 @@ jobs:
 
     - name: MSBuild of plugin dll
       working-directory: vs.proj\
-      env:
-        INCDIRS: ${{ github.workspace }}\src\Dialog\;${{ github.workspace }}\src\;
       run: |
-        echo INCDIRS = %INCDIRS%
+        set INCDIRS=${{ github.workspace }}\src\Dialog\;${{ github.workspace }}\src\;
+        echo INCDIRS = ,,%INCDIRS%,,
         msbuild CollectionInterface.vcxproj /m /p:configuration="${{ matrix.build_configuration }}" /p:platform="${{ matrix.build_platform }}" /p:AdditionalIncludeDirectories="%INCDIRS"
 
     - name: Archive artifacts for x64
