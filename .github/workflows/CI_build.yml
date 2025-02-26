@@ -21,7 +21,11 @@ jobs:
 
     - name: MSBuild of plugin dll
       working-directory: vs.proj\
-      run: msbuild CollectionInterface.vcxproj /m /p:configuration="${{ matrix.build_configuration }}" /p:platform="${{ matrix.build_platform }}" /p:AdditionalIncludeDirectories="..\src\Dialogs\;..\src\"
+      env:
+        INCDIRS: ${{ github.workspace }}\src\Dialog\;${{ github.workspace }}\src\;
+      run: |
+        echo INCDIRS = %INCDIRS%
+        msbuild CollectionInterface.vcxproj /m /p:configuration="${{ matrix.build_configuration }}" /p:platform="${{ matrix.build_platform }}" /p:AdditionalIncludeDirectories="%INCDIRS"
 
     - name: Archive artifacts for x64
       if: matrix.build_platform == 'x64' && matrix.build_configuration == 'Release'
