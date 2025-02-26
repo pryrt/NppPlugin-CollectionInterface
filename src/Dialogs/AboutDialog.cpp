@@ -61,6 +61,7 @@ INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 		return true;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
+		case IDCANCEL:
 		case IDOK:
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
