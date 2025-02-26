@@ -37,6 +37,7 @@
     <ClInclude Include="..\src\DockingFeature\resource.h" />
     <ClInclude Include="..\src\DockingFeature\StaticDialog.h" />
     <ClInclude Include="..\src\DockingFeature\Window.h" />
+    <ClInclude Include="..\src\Hyperlinks.h" />
     <ClInclude Include="..\src\menuCmdID.h" />
     <ClInclude Include="..\src\Notepad_plus_msgs.h" />
     <ClInclude Include="..\src\PluginDefinition.h" />
@@ -49,6 +50,7 @@
     <ClCompile Include="..\src\DockingFeature\GoToLineDlg.cpp" />
     <ClCompile Include="..\src\DockingFeature\StaticDialog.cpp" />
     <ClCompile Include="..\src\CollectionInterface.cpp" />
+    <ClCompile Include="..\src\Hyperlinks.cpp" />
     <ClCompile Include="..\src\PluginDefinition.cpp" />
   </ItemGroup>
   <ItemGroup>

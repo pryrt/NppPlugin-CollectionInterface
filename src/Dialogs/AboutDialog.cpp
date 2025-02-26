@@ -1,24 +1,27 @@
-// This file is part of DoxyIt.
-// 
-// Copyright (C)2013 Justin Dailey <dail8859@yahoo.com>
-// 
-// DoxyIt is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-// 
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+/*
+	Copyright (C) 2025  Peter C. Jones <pryrtcode@pryrt.com>
+
+	This file is part of the source code for the CollectionInterface plugin for Notepad++
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #include <WindowsX.h>
 #include "PluginDefinition.h"
 #include "resource.h"
+#include "Version.h"
+#include "Hyperlinks.h"
 
 #ifdef _WIN64
 #define BITNESS TEXT("(64 bit)")
@@ -31,10 +34,12 @@
 INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
 	case WM_INITDIALOG:
-		//ConvertStaticToHyperlink(hwndDlg, IDC_GITHUB);
+		ConvertStaticToHyperlink(hwndDlg, IDC_GITHUB);
 		//ConvertStaticToHyperlink(hwndDlg, IDC_README);
 		//Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), TEXT("DoxyIt v") VERSION_TEXT TEXT(" ") VERSION_STAGE TEXT(" ") BITNESS);
-		Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), TEXT("CollectionInterface v???"));
+		wchar_t title[256];
+		swprintf_s(title, L"%s v%s %s", L"CollectionInterface", VERSION_TEXT, BITNESS);
+		Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), title);
 
 		if (1) {
 			// Find Center and then position the window:
@@ -66,9 +71,9 @@ INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
 			return true;
-			//case IDC_GITHUB:
-			//	ShellExecute(hwndDlg, TEXT("open"), TEXT("https://github.com/dail8859/DoxyIt/"), NULL, NULL, SW_SHOWNORMAL);
-			//	return true;
+			case IDC_GITHUB:
+				ShellExecute(hwndDlg, TEXT("open"), TEXT(VERSION_URL), NULL, NULL, SW_SHOWNORMAL);
+				return true;
 			//case IDC_README:
 			//	ShellExecute(hwndDlg, TEXT("open"), TEXT("https://github.com/dail8859/DoxyIt/blob/v") VERSION_TEXT TEXT("/README.md"), NULL, NULL, SW_SHOWNORMAL);
 			//	return true;

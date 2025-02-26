@@ -8,6 +8,7 @@
     <ClCompile Include="..\src\Dialogs\AboutDialog.cpp">
       <Filter>Dialogs</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Hyperlinks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\DockingFeature\Docking.h" />
@@ -32,6 +33,7 @@
     <ClInclude Include="..\src\Dialogs\Version.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Hyperlinks.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\DockingFeature\goLine.rc" />

@@ -1,26 +1,41 @@
+/*
+    Copyright (C) 2025  Peter C. Jones <pryrtcode@pryrt.com>
+
+    This file is part of the source code for the CollectionInterface plugin for Notepad++
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <windows.h>
 #include <commctrl.h>
 #include <richedit.h>
 #include "resource.h"
 #include "Version.h"
 
-#define PREFIXED_AUTH	"Author : " ## VERSION_AUTHOR
-
-
 //
 // Dialog resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDD_ABOUTDLG DIALOGEX 0, 0, 223, 130
+IDD_ABOUTDLG DIALOGEX 0, 0, 273, 130
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 {
     PUSHBUTTON      "Close", IDOK, 86, 109, 50, 14
-        GROUPBOX        "", IDC_VERSION, 10, 9, 201, 93, BS_CENTER
-        LTEXT           PREFIXED_AUTH, IDC_STATIC, 30, 26, 180, 8
-        //LTEXT           "The DoxyIt code is hosted on", IDC_STATIC, 30, 43, 180, 8
-        //LTEXT           "GitHub", IDC_GITHUB, 127, 43, 22, 8, SS_LEFT | SS_NOTIFY, WS_EX_LEFT
-        //LTEXT           "For detailed usage, view the", IDC_STATIC, 30, 62, 110, 8, SS_LEFT
-        //LTEXT           "readme", IDC_README, 124, 62, 24, 8, SS_LEFT | SS_NOTIFY, WS_EX_LEFT
-        //LTEXT           "This code is licensed under GPLv2", IDC_STATIC, 30, 80, 111, 8, SS_LEFT
+        GROUPBOX        "PluginNameHere", IDC_VERSION, 10, 9, 251, 93, BS_CENTER
+        LTEXT           "Author: ", IDC_STATIC, 20, 26, 37, 8, SS_LEFT, WS_EX_LEFT
+        LTEXT           VERSION_AUTHOR, IDC_STATIC, 60, 26, 200, 8, SS_LEFT, WS_EX_LEFT
+        LTEXT           "Repo: ", IDC_STATIC, 20, 43, 37, 8, SS_LEFT, WS_EX_LEFT
+        LTEXT           VERSION_URL, IDC_GITHUB, 60, 43, 200, 8, SS_LEFT | SS_NOTIFY, WS_EX_LEFT
+        LTEXT           "This code is licensed under GPLv3", IDC_STATIC, 30, 80, 111, 8, SS_LEFT
 }
