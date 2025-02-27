@@ -9,6 +9,9 @@
       <Filter>Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Hyperlinks.cpp" />
+    <ClCompile Include="..\src\Dialogs\CollectionInterfaceDialog.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\DockingFeature\Docking.h" />
@@ -34,11 +37,17 @@
       <Filter>Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="..\src\Hyperlinks.h" />
+    <ClInclude Include="..\src\Dialogs\CollectionInterfaceDialog.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\DockingFeature\goLine.rc" />
     <ResourceCompile Include="..\src\CollectionInterface.rc" />
-    <ResourceCompile Include="..\src\Dialogs\resource.rc">
+    <ResourceCompile Include="..\src\Dialogs\AboutDialog.rc">
+      <Filter>Dialogs</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="..\src\Dialogs\CollectionInterfaceDialog.rc">
       <Filter>Dialogs</Filter>
     </ResourceCompile>
   </ItemGroup>

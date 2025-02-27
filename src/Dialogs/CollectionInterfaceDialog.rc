@@ -27,15 +27,20 @@
 // Dialog resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDD_ABOUTDLG DIALOGEX 0, 0, 273, 130
+IDD_COLLECTIONINTERFACEDLG DIALOGEX 0, 0, 300, 85
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 {
-    PUSHBUTTON      "Close", IDOK, 86, 109, 50, 14
-        GROUPBOX        "PluginNameHere", IDC_VERSION, 10, 9, 251, 93, BS_CENTER
-        LTEXT           "Author: ", IDC_STATIC, 20, 26, 37, 8, SS_LEFT, WS_EX_LEFT
-        LTEXT           VERSION_AUTHOR, IDC_STATIC, 60, 26, 200, 8, SS_LEFT, WS_EX_LEFT
-        LTEXT           "Repo: ", IDC_STATIC, 20, 43, 37, 8, SS_LEFT, WS_EX_LEFT
-        LTEXT           VERSION_URL, IDC_GITHUB, 60, 43, 200, 8, SS_LEFT | SS_NOTIFY, WS_EX_LEFT
-        LTEXT           "This code is licensed under GPLv3", IDC_STATIC, 30, 80, 111, 8, SS_LEFT
+    LTEXT           "Download from UDL Collection or Themes Collection", IDC_STATIC, 10, 5, 280, 9, SS_LEFT, WS_EX_LEFT
+        PUSHBUTTON      "&Download", IDC_CI_BTN_DOWNLOAD, 10, 65, 60, 14
+        PUSHBUTTON      "&Done", IDC_CI_BTN_DONE, 80, 65, 60, 14
+        PUSHBUTTON      "&Restart N++", IDC_CI_BTN_RESTART, 200, 65, 90, 14
+
+        LTEXT           "Category:", IDC_STATIC, 10, 23, 30, 9, SS_LEFT, WS_EX_LEFT
+        COMBOBOX        IDC_CI_COMBO_CATEGORY, 50, 20, 240, 52, CBS_DROPDOWNLIST | CBS_AUTOHSCROLL | CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+
+        LTEXT           "File:", IDC_STATIC, 10, 41, 30, 9, SS_LEFT, WS_EX_LEFT
+        COMBOBOX        IDC_CI_COMBO_FILE, 50, 40, 240, 11, CBS_DROPDOWNLIST | CBS_AUTOHSCROLL | CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+
+        LTEXT           "Need RESTART for Notepad++ to see new UDL/AutoCompletion/FunctionList/Themes", IDC_STATIC, 10, 55, 280, 9, SS_LEFT, WS_EX_LEFT
 }

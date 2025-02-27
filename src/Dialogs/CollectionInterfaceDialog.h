@@ -18,19 +18,8 @@
 */
 
 #pragma once
-#ifndef IDC_STATIC
-#define IDC_STATIC (-1)
-#endif
+#include <WindowsX.h>
+#include "PluginDefinition.h"
+#include "resource.h"
 
-// About Dialog
-#define IDD_ABOUTDLG                            101
-#define IDC_VERSION                             1001
-#define IDC_GITHUB                              1002
-
-// CollectionInterface Dialog
-#define IDD_COLLECTIONINTERFACEDLG              102
-#define IDC_CI_BTN_DOWNLOAD                     1001
-#define IDC_CI_BTN_DONE                         1002
-#define IDC_CI_BTN_RESTART                      1003
-#define IDC_CI_COMBO_CATEGORY                   1004
-#define IDC_CI_COMBO_FILE                       1005
+INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
