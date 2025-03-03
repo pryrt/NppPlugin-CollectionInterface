@@ -12,6 +12,9 @@
     <ClCompile Include="..\src\Dialogs\CollectionInterfaceDialog.cpp">
       <Filter>Dialogs</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Classes\CollectionInterfaceClass.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\DockingFeature\Docking.h" />
@@ -40,6 +43,9 @@
     <ClInclude Include="..\src\Dialogs\CollectionInterfaceDialog.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Classes\CollectionInterfaceClass.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\DockingFeature\goLine.rc" />
@@ -54,6 +60,9 @@
   <ItemGroup>
     <Filter Include="Dialogs">
       <UniqueIdentifier>{7093fbe7-6903-4f76-aba8-518019b09f16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Classes">
+      <UniqueIdentifier>{8ebe3960-be3e-4cdd-92b3-097addd051c9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

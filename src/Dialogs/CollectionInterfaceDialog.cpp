@@ -22,6 +22,12 @@
 #include "resource.h"
 #include "Version.h"
 #include "CollectionInterfaceDialog.h"
+#include "CollectionInterfaceClass.h"
+#include <string>
+#include <vector>
+
+CollectionInterface* pobjCI;
+void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vwsList);
 
 #pragma warning(push)
 #pragma warning(disable: 4100)
@@ -56,6 +62,8 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Theme"));
 		const int index2Begin = 0;	// start with UDL selected
 		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
+
+		pobjCI = new CollectionInterface;
 	}
 
 	return true;
@@ -68,18 +76,24 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case IDC_CI_BTN_RESTART:
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
+			delete pobjCI;
+			pobjCI = NULL;
 			return true;
 		case IDC_CI_COMBO_CATEGORY:
 			if(HIWORD(wParam) == CBN_SELCHANGE) {
-				LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
+				LRESULT selectedIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETCURSEL, 0, 0);
 				if (selectedIndex != CB_ERR) {
-					wchar_t buffer[256];
-					LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXTLEN, selectedIndex, 0);
-					if (needLen < 256) {
-						::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(buffer));
-						buffer[255] = '\0';
-						::MessageBox(NULL, buffer, L"Which Category:", MB_OK);
-					}
+					LRESULT needLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedIndex, 0);
+					std::wstring wsCategory(needLen,0);
+					::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsCategory.c_str()));
+					if (wsCategory == L"UDL")
+						_populate_file_cbx(hwndDlg, pobjCI->vwsUDLFiles);
+					else if (wsCategory == L"AutoCompletion")
+						_populate_file_cbx(hwndDlg, pobjCI->vwsACFiles);
+					else if (wsCategory == L"FunctionList")
+						_populate_file_cbx(hwndDlg, pobjCI->vwsFLFiles);
+					else if (wsCategory == L"Theme")
+						_populate_file_cbx(hwndDlg, pobjCI->vwsThemeFiles);
 				}
 			}
 			return true;
@@ -107,3 +121,14 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 	return false;
 }
 #pragma warning(pop)
+
+void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vwsList)
+{
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_RESETCONTENT, 0, 0);
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
+	for (auto& str : vwsList) {
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.c_str()));
+	}
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_SETCURSEL, 0, 0);
+	return;
+}
