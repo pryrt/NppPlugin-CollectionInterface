@@ -28,29 +28,37 @@
 INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
 	case WM_INITDIALOG:
-		if (1) {
-			// Find Center and then position the window:
+	{
+		// Find Center and then position the window:
 
-			// find App center
-			RECT rc;
-			HWND hParent = GetParent(hwndDlg);
-			::GetClientRect(hParent, &rc);
-			POINT center;
-			int w = rc.right - rc.left;
-			int h = rc.bottom - rc.top;
-			center.x = rc.left + w / 2;
-			center.y = rc.top + h / 2;
-			::ClientToScreen(hParent, &center);
+		// find App center
+		RECT rc;
+		HWND hParent = GetParent(hwndDlg);
+		::GetClientRect(hParent, &rc);
+		POINT center;
+		int w = rc.right - rc.left;
+		int h = rc.bottom - rc.top;
+		center.x = rc.left + w / 2;
+		center.y = rc.top + h / 2;
+		::ClientToScreen(hParent, &center);
 
-			// and position dialog
-			RECT dlgRect;
-			::GetClientRect(hwndDlg, &dlgRect);
-			int x = center.x - (dlgRect.right - dlgRect.left) / 2;
-			int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
-			::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
-		}
+		// and position dialog
+		RECT dlgRect;
+		::GetClientRect(hwndDlg, &dlgRect);
+		int x = center.x - (dlgRect.right - dlgRect.left) / 2;
+		int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
+		::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
 
-		return true;
+		// populate Category list
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"UDL"));
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"AutoCompletion"));
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"FunctionList"));
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Theme"));
+		const int index2Begin = 0;	// start with UDL selected
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
+	}
+
+	return true;
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
 		case IDCANCEL:
@@ -61,6 +69,36 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
 			return true;
+		case IDC_CI_COMBO_CATEGORY:
+			if(HIWORD(wParam) == CBN_SELCHANGE) {
+				LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
+				if (selectedIndex != CB_ERR) {
+					wchar_t buffer[256];
+					LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXTLEN, selectedIndex, 0);
+					if (needLen < 256) {
+						::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(buffer));
+						buffer[255] = '\0';
+						::MessageBox(NULL, buffer, L"Which Category:", MB_OK);
+					}
+				}
+			}
+			return true;
+		case IDC_CI_COMBO_FILE:
+			if (HIWORD(wParam) == CBN_SELCHANGE) {
+				LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
+				if (selectedIndex != CB_ERR) {
+					wchar_t buffer[256];
+					LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXTLEN, selectedIndex, 0);
+					if (needLen < 256) {
+						::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(buffer));
+						buffer[255] = '\0';
+						::MessageBox(NULL, buffer, L"Which File:", MB_OK);
+					}
+				}
+			}
+			return true;
+		default:
+			return false;
 		}
 	case WM_DESTROY:
 		DestroyWindow(hwndDlg);
