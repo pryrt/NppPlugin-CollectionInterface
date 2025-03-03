@@ -64,6 +64,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
 
 		pobjCI = new CollectionInterface;
+		_populate_file_cbx(hwndDlg, pobjCI->vwsUDLFiles);
 	}
 
 	return true;
