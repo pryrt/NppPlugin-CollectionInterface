@@ -23,6 +23,7 @@
 #include "Version.h"
 #include "CollectionInterfaceDialog.h"
 #include "CollectionInterfaceClass.h"
+#include "menuCmdID.h"
 #include <string>
 #include <vector>
 
@@ -74,18 +75,17 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case IDOK:
 		case IDC_CI_BTN_DOWNLOAD:
 		case IDC_CI_BTN_DONE:
-		case IDC_CI_BTN_RESTART:
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
 			delete pobjCI;
 			pobjCI = NULL;
 			return true;
 		case IDC_CI_COMBO_CATEGORY:
-			if(HIWORD(wParam) == CBN_SELCHANGE) {
+			if (HIWORD(wParam) == CBN_SELCHANGE) {
 				LRESULT selectedIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETCURSEL, 0, 0);
 				if (selectedIndex != CB_ERR) {
 					LRESULT needLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedIndex, 0);
-					std::wstring wsCategory(needLen,0);
+					std::wstring wsCategory(needLen, 0);
 					::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsCategory.c_str()));
 					if (wsCategory == L"UDL")
 						_populate_file_cbx(hwndDlg, pobjCI->vwsUDLFiles);
@@ -110,6 +110,57 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 						::MessageBox(NULL, buffer, L"Which File:", MB_OK);
 					}
 				}
+			}
+			return true;
+		case IDC_CI_BTN_RESTART:
+			// In python
+			//		#console.write(f"argv => {sys.argv}\n") # this would be useful for the['cmd', 'o1', ...'oN'] version of Popen = > subprocess.Popen(sys.argv)
+			//		#   but since I want the TIMEOUT to give previous instance a chance to close, I need to use the string from GetCommandLine() anyway,
+			//		#   so don't need sys.argv
+			//
+			//		cmd = f"cmd /C TIMEOUT /T 2 && {GetCommandLine()}"
+			//		subprocess.Popen(cmd)
+			//		self.terminate()
+			//		notepad.menuCommand(MENUCOMMAND.FILE_EXIT)
+			STARTUPINFOW si;
+			PROCESS_INFORMATION pi;
+
+			ZeroMemory(&si, sizeof(si));
+			si.cb = sizeof(si);
+			ZeroMemory(&pi, sizeof(pi));
+
+			wchar_t cmd[MAX_PATH];
+			swprintf_s(cmd, L"cmd /C ECHO Wait for old Notepad++ to close before launching new copy... & TIMEOUT /T 6 && START \"\" %s", GetCommandLineW());
+			//::MessageBox(NULL, cmd, L"Command to launch:", MB_OK);
+			// If I want to create a persistent console (`cmd /K`), use CREATE_NEW_CONSOLE
+			// if it doesn't need a persistent console (`cmd /C`), use DETACHED_PROCESS
+			//	either one will outlive the parent, so File>Exit will work
+			//	!!TODO!! get the delay working right, or punt to creating and launching a temporary .bat that deletes itself
+			if (CreateProcessW(nullptr, cmd, nullptr, nullptr, FALSE, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &pi)) {
+				CloseHandle(pi.hProcess);
+				CloseHandle(pi.hThread);
+
+				HWND hParent = GetParent(hwndDlg);
+				SendMessage(hParent, NPPM_MENUCOMMAND, 0, IDM_FILE_EXIT);
+			}
+			else {
+				DWORD errNum = GetLastError();
+				LPWSTR messageBuffer = nullptr;
+				size_t size = FormatMessageW(
+					FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+					NULL,
+					errNum,
+					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					(LPWSTR)&messageBuffer,
+					0,
+					NULL
+				);
+
+				wchar_t msg[4096];
+				swprintf_s(msg, L"Command: %s\n\nCode:    %d\nDesc:    [%lld]%s", cmd, errNum, size, messageBuffer);
+				::MessageBox(NULL, msg, L"Command Error", MB_ICONERROR);
+
+				LocalFree(messageBuffer);
 			}
 			return true;
 		default:
