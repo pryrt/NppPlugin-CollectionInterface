@@ -73,7 +73,6 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		switch (LOWORD(wParam)) {
 		case IDCANCEL:
 		case IDOK:
-		case IDC_CI_BTN_DOWNLOAD:
 		case IDC_CI_BTN_DONE:
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
@@ -101,18 +100,19 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case IDC_CI_COMBO_FILE:
 			if (HIWORD(wParam) == CBN_SELCHANGE) {
 				LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
-				if (selectedIndex != CB_ERR) {
-					wchar_t buffer[256];
+				if (!selectedIndex) {
+					::MessageBox(NULL, L"Please pick a FILE, not <Pick File>", L"FILE selector", MB_ICONWARNING);
+				} 
+				else if (selectedIndex != CB_ERR) {
 					LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXTLEN, selectedIndex, 0);
-					if (needLen < 256) {
-						::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(buffer));
-						buffer[255] = '\0';
-						::MessageBox(NULL, buffer, L"Which File:", MB_OK);
-					}
+					std::wstring wsFilename(needLen, 0);
+					::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsFilename.c_str()));
+					//::MessageBox(NULL, wsFilename.c_str(), L"Which File:", MB_OK);
 				}
 			}
 			return true;
 		case IDC_CI_BTN_RESTART:
+		{
 			// In python
 			//		#console.write(f"argv => {sys.argv}\n") # this would be useful for the['cmd', 'o1', ...'oN'] version of Popen = > subprocess.Popen(sys.argv)
 			//		#   but since I want the TIMEOUT to give previous instance a chance to close, I need to use the string from GetCommandLine() anyway,
@@ -162,7 +162,38 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 				LocalFree(messageBuffer);
 			}
-			return true;
+		}
+		return true;
+		case IDC_CI_BTN_DOWNLOAD:
+		{
+			LRESULT selectedCatIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETCURSEL, 0, 0);
+			if (selectedCatIndex == CB_ERR) {
+				::MessageBox(NULL, L"Could not understand CATEGORY; sorry", L"Download Error", MB_ICONERROR);
+				return true;
+			}
+
+			LRESULT needCatLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedCatIndex, 0);
+			std::wstring wsCategory(needCatLen, 0);
+			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedCatIndex, reinterpret_cast<LPARAM>(wsCategory.c_str()));
+
+			LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETCURSEL, 0, 0);
+			switch (selectedFileIndex) {
+			case CB_ERR:
+				::MessageBox(NULL, L"Could not understand FILE combobox; sorry", L"Download Error", MB_ICONERROR);
+				return true;
+			case 0:
+				::MessageBox(NULL, L"Please pick a FILE, not <Pick File>", L"Download Error", MB_ICONERROR);
+				return true;
+			}
+
+			LRESULT needFileLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXTLEN, selectedFileIndex, 0);
+			std::wstring wsFilename(needFileLen, 0);
+			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.c_str()));
+
+			std::wstring wsMessage = L"TODO: Download(" + wsCategory + L", " + wsFilename + L")";
+			::MessageBox(NULL, wsMessage.c_str(), L"TODO: Download", MB_OK);
+		}
+		return true;
 		default:
 			return false;
 		}
