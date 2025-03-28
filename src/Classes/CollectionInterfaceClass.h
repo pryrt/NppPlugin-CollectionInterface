@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <stdexcept>
+#include <windows.h>
+#include <wininet.h>
 
 class CollectionInterface {
 public:
@@ -12,4 +15,6 @@ public:
 	std::vector<std::wstring> vwsACFiles;
 	std::vector<std::wstring> vwsFLFiles;
 	std::vector<std::wstring> vwsThemeFiles;
+
+	std::vector<char> downloadFileInMemory(const std::string& url);
 };
