@@ -61,13 +61,35 @@ void CollectionInterface::getListsFromJson(void)
 		auto j = item.value();
 		//::MessageBoxA(NULL, item.value()["id-name"].get<std::string>().c_str(), "IterateUdlList[id-name]", MB_OK);
 		if (j.contains("functionList")) {
-			::MessageBoxA(NULL, item.value()["id-name"].get<std::string>().c_str(), "IterateUdlList[id-name]: has functionList", MB_OK);
-			::MessageBoxA(NULL, j["functionList"].get<std::string>().c_str(), "Entry with functionList", MB_OK);
+			1;//::MessageBoxA(NULL, item.value()["id-name"].get<std::string>().c_str(), "IterateUdlList[id-name]: has functionList", MB_OK);
+			if (j["functionList"].is_boolean()) {
+				1;//::MessageBoxA(NULL, j["functionList"].get<bool>() ? "True" : "False", "Entry with boolean functionList", MB_OK);
+			}
+			if (j["functionList"].is_string()) {
+				1;//::MessageBoxA(NULL, j["functionList"].get<std::string>().c_str(), "Entry with string functionList", MB_OK);
+				auto s = j["functionList"].get<std::string>();
+				if (s.find("http") == 0) {
+					::MessageBoxA(NULL, s.c_str(), "Entry with URL functionList", MB_OK);
+				}
+				else {
+					::MessageBoxA(NULL, s.c_str(), "Entry with normal string functionList", MB_OK);
+				}
+			}
 		}
 		if (j.contains("autoCompletion")) {
-			::MessageBoxA(NULL, item.value()["id-name"].get<std::string>().c_str(), "IterateUdlList[id-name]: has autoCompletion", MB_OK);
-			//::MessageBoxA(NULL, j["autoCompletion"].get<std::string>().c_str(), "Entry with autoCompletion", MB_OK);
-			// TODO: cannot yet handle boolean (true/false) vs string, which I'll need to be able to handle
+			1;//::MessageBoxA(NULL, item.value()["id-name"].get<std::string>().c_str(), "IterateUdlList[id-name]: has autoCompletion", MB_OK);
+			if (j["autoCompletion"].is_boolean()) {
+				1;// ::MessageBoxA(NULL, j["autoCompletion"].get<bool>() ? "True" : "False", "Entry with boolean autoCompletion", MB_OK);
+			}
+			if (j["autoCompletion"].is_string()) {
+				auto s = j["autoCompletion"].get<std::string>();
+				if (s.find("http") == 0) {
+					1; // ::MessageBoxA(NULL, s.c_str(), "Entry with URL autoCompletion", MB_OK);
+				}
+				else {
+					1; // ::MessageBoxA(NULL, s.c_str(), "Entry with normal string autoCompletion", MB_OK);
+				}
+			}
 		}
 	}
 
