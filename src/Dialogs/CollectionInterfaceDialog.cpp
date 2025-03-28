@@ -65,12 +65,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
 
 		pobjCI = new CollectionInterface;
-		std::vector<char> vcThemeJSON = pobjCI->downloadFileInMemory("https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/master/themes/.toc.json");
-		// TODO: process JSON
-
-		std::vector<char> vcUdlJSON = pobjCI->downloadFileInMemory("https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/refs/heads/master/udl-list.json");
-		// TODO: process JSON
-
+		pobjCI->getListsFromJson();
 		_populate_file_cbx(hwndDlg, pobjCI->vwsUDLFiles);
 	}
 

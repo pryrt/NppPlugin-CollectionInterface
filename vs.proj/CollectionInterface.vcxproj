@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Classes\CollectionInterfaceClass.h" />
+    <ClInclude Include="..\src\Classes\json.hpp" />
     <ClInclude Include="..\src\Dialogs\AboutDialog.h" />
     <ClInclude Include="..\src\Dialogs\CollectionInterfaceDialog.h" />
     <ClInclude Include="..\src\Dialogs\resource.h" />

@@ -17,4 +17,5 @@ public:
 	std::vector<std::wstring> vwsThemeFiles;
 
 	std::vector<char> downloadFileInMemory(const std::string& url);
+	void getListsFromJson(void);
 };
