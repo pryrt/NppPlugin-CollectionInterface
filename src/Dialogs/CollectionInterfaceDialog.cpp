@@ -28,7 +28,8 @@
 #include <vector>
 
 CollectionInterface* pobjCI;
-void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vwsList);
+void _populate_file_cbx(HWND hwndDlg, std::vector<std::string>& vsList);
+void _populate_file_cbx(HWND hwndDlg, std::map<std::string, std::string>& mapURLs, std::map<std::string, std::string>& mapDisplay);
 
 #pragma warning(push)
 #pragma warning(disable: 4100)
@@ -65,8 +66,8 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
 
 		pobjCI = new CollectionInterface;
-		pobjCI->getListsFromJson();
-		_populate_file_cbx(hwndDlg, pobjCI->vwsUDLFiles);
+		//pobjCI->getListsFromJson();
+		_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 	}
 
 	return true;
@@ -88,13 +89,13 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					std::wstring wsCategory(needLen, 0);
 					::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsCategory.c_str()));
 					if (wsCategory == L"UDL")
-						_populate_file_cbx(hwndDlg, pobjCI->vwsUDLFiles);
+						_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 					else if (wsCategory == L"AutoCompletion")
-						_populate_file_cbx(hwndDlg, pobjCI->vwsACFiles);
+						_populate_file_cbx(hwndDlg, pobjCI->mapAC, pobjCI->mapDISPLAY);
 					else if (wsCategory == L"FunctionList")
-						_populate_file_cbx(hwndDlg, pobjCI->vwsFLFiles);
+						_populate_file_cbx(hwndDlg, pobjCI->mapFL, pobjCI->mapDISPLAY);
 					else if (wsCategory == L"Theme")
-						_populate_file_cbx(hwndDlg, pobjCI->vwsThemeFiles);
+						_populate_file_cbx(hwndDlg, pobjCI->vThemeFiles);
 				}
 			}
 			return true;
@@ -206,12 +207,26 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 }
 #pragma warning(pop)
 
-void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vwsList)
+void _populate_file_cbx(HWND hwndDlg, std::vector<std::string>& vsList)
 {
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_RESETCONTENT, 0, 0);
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
-	for (auto& str : vwsList) {
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.c_str()));
+	for (auto& str : vsList) {
+		::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.c_str()));
+	}
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_SETCURSEL, 0, 0);
+	return;
+}
+
+void _populate_file_cbx(HWND hwndDlg, std::map<std::string,std::string>& mapURLs, std::map<std::string,std::string>& mapDisplay)
+{
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_RESETCONTENT, 0, 0);
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
+	for (const auto& pair: mapURLs) {
+		auto key = pair.first;
+		if (mapDisplay.count(key)) {
+			::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(mapDisplay[key].c_str()));
+		}
 	}
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_SETCURSEL, 0, 0);
 	return;

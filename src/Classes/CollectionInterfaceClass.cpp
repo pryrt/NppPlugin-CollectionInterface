@@ -3,14 +3,7 @@
 #include "json.hpp"
 
 CollectionInterface::CollectionInterface(void) {
-	vwsUDLFiles.push_back(L"udl1.xml");
-	vwsUDLFiles.push_back(L"udl2.xml");
-	vwsUDLFiles.push_back(L"udl3.xml");
-	vwsACFiles.push_back(L"ac1.xml");
-	vwsACFiles.push_back(L"ac2.xml");
-	vwsFLFiles.push_back(L"fl1.xml");
-	vwsFLFiles.push_back(L"fl2.xml");
-	vwsThemeFiles.push_back(L"themeA");
+	getListsFromJson();
 };
 
 std::vector<char> CollectionInterface::downloadFileInMemory(const std::string& url)
@@ -91,21 +84,24 @@ std::string CollectionInterface::_xml_unentity(const std::string& text)
 
 void CollectionInterface::getListsFromJson(void)
 {
+	////////////////////////////////
+	// Process Theme JSON
+	////////////////////////////////
+	// TODO:
 	std::vector<char> vcThemeJSON = downloadFileInMemory("https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/master/themes/.toc.json");
 	nlohmann::json jTheme = nlohmann::json::parse(vcThemeJSON);
 	std::string v = jTheme.at(0).get<std::string>();
-	//::MessageBoxA(NULL, v.c_str(), "DebugJson", MB_OK);
 	for (const auto& item : jTheme.items()) {
-		::MessageBoxA(NULL, item.value().get<std::string>().c_str(), "IterateThemes", MB_OK);
+		vThemeFiles.push_back(item.value().get<std::string>().c_str());
+		//!!	::MessageBoxA(NULL, item.value().get<std::string>().c_str(), "IterateThemes", MB_OK);
 	}
 
+	////////////////////////////////
+	// Process UDL JSON
+	////////////////////////////////
 	std::vector<char> vcUdlJSON = downloadFileInMemory("https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/refs/heads/master/udl-list.json");
 	nlohmann::json jUdl = nlohmann::json::parse(vcUdlJSON);
-	// iterate over all the items (key/value pairs) in the top=level, where key() is the name of the key and value() is the object the entry contains
-	for (const auto& item : jUdl.items()) {
-		::MessageBoxA(NULL, item.key().c_str(), "IterateUdlKeys", MB_OK);
-	}
-	// iterate over all the elements of the "UDLs" list; for a list, the key() is just the index, and the value() is the sub-object
+	// for a list, the key() is just the index, and the value() is the sub-object
 	for (const auto& item : jUdl["UDLs"].items()) {
 		auto j = item.value();
 		std::string id_name = j["id-name"].get<std::string>();
@@ -127,9 +123,9 @@ void CollectionInterface::getListsFromJson(void)
 				}
 			}
 
-			// TODO: assign into the data structure...
+			// assign into the data structure...
 			if (sUDL != "") {
-				1;
+				mapUDL[id_name] = sUDL;
 			}
 		}
 
@@ -139,12 +135,12 @@ void CollectionInterface::getListsFromJson(void)
 
 			if (display_name != j["display-name"].get<std::string>()) {
 				std::string msg = "Convert\n" + j["display-name"].get<std::string>() + "\ninto\n" + display_name;
-				::MessageBoxA(NULL, msg.c_str(), "DisplayName Conversion", MB_OK);
 			}
 
-			// TODO: assign into the data structure...
+			// assign into the data structure...
 			if (display_name != "") {
-				1;
+				mapDISPLAY[id_name] = display_name;
+				revDISPLAY[display_name] = id_name;
 			}
 		}
 		
@@ -163,9 +159,10 @@ void CollectionInterface::getListsFromJson(void)
 					sFuncList = udl_base + "functionList/" + s + ".xml";
 				}
 			}
-			// TODO: assign sFuncList into the data structure...
+
+			// assign sFuncList into the data structure...
 			if (sFuncList != "") {
-				::MessageBoxA(NULL, sFuncList.c_str(), "Final FunctionList URL", MB_OK);
+				mapFL[id_name] = sFuncList;
 			}
 		}
 
@@ -185,9 +182,10 @@ void CollectionInterface::getListsFromJson(void)
 					sAutoComp = udl_base + "autoCompletion/" + s + ".xml";
 				}
 			}
-			// TODO: assign sAutoComp into the data structure...
+
+			// assign sAutoComp into the data structure...
 			if (sAutoComp != "") {
-				::MessageBoxA(NULL, sAutoComp.c_str(), "Final AutoCompletion URL", MB_OK);
+				mapAC[id_name] = sAutoComp;
 			}
 		}
 	}
