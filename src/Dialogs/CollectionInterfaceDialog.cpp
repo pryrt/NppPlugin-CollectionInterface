@@ -174,9 +174,10 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				return true;
 			}
 
-			LRESULT needCatLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedCatIndex, 0);
-			std::wstring wsCategory(needCatLen, 0);
-			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedCatIndex, reinterpret_cast<LPARAM>(wsCategory.c_str()));
+			// use the ASCII version, because the mapping is in std::string, not std::wstring, to avoid multiple conversions
+			LRESULT needCatLen = ::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedCatIndex, 0);
+			std::string sCategory(needCatLen, 0);
+			::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedCatIndex, reinterpret_cast<LPARAM>(sCategory.c_str()));
 
 			LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETCURSEL, 0, 0);
 			switch (selectedFileIndex) {
@@ -188,12 +189,33 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				return true;
 			}
 
-			LRESULT needFileLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXTLEN, selectedFileIndex, 0);
-			std::wstring wsFilename(needFileLen, 0);
-			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.c_str()));
+			LRESULT needFileLen = ::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXTLEN, selectedFileIndex, 0);
+			std::string sFilename(needFileLen, 0);
+			::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(sFilename.c_str()));
 
-			std::wstring wsMessage = L"TODO: Download(" + wsCategory + L", " + wsFilename + L")";
-			::MessageBox(NULL, wsMessage.c_str(), L"TODO: Download", MB_OK);
+			std::string id_name = (pobjCI->revDISPLAY.count(sFilename)) ? pobjCI->revDISPLAY[sFilename] : "!!DoesNotExist!!";
+			std::string sURL = "";
+			if (sCategory == "UDL") {
+				if(pobjCI->mapUDL.count(id_name)) {
+					sURL = pobjCI->mapUDL[id_name];
+				}
+			}
+			else if (sCategory == "AutoCompletion") {
+				if (pobjCI->mapAC.count(id_name)) {
+					sURL = pobjCI->mapAC[id_name];
+				}
+			}
+			else if (sCategory == "FunctionList") {
+				if (pobjCI->mapFL.count(id_name)) {
+					sURL = pobjCI->mapFL[id_name];
+				}
+			}
+			else if (sCategory == "Theme") {
+				sURL = "https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + sFilename;
+			}
+
+			std::string sMessage = "TODO: Download(" + sCategory + ", " + sFilename + ") => " + sURL;
+			::MessageBoxA(NULL, sMessage.c_str(), "TODO: Download", MB_OK);
 		}
 		return true;
 		default:
