@@ -18,4 +18,6 @@ public:
 
 	std::vector<char> downloadFileInMemory(const std::string& url);
 	void getListsFromJson(void);
+private:
+	std::string CollectionInterface::_xml_unentity(const std::string& text);
 };
