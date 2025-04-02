@@ -95,7 +95,7 @@ bool CollectionInterface::downloadFileToDisk(const std::string& url, const std::
 
 	DWORD dwExSize = 2 * static_cast<DWORD>(path.size());
 	std::string expandedPath(dwExSize, '\0');
-	if (!ExpandEnvironmentStringsA(path.c_str(), const_cast<char*>(expandedPath.c_str()), dwExSize)) {
+	if (!ExpandEnvironmentStringsA(path.c_str(), const_cast<char*>(expandedPath.data()), dwExSize)) {
 		std::string errmsg = "ExpandEnvirontmentStrings(" + path + ") failed: " + std::to_string(GetLastError()) + "\n";
 		throw std::runtime_error(errmsg.c_str());
 	}
@@ -293,7 +293,6 @@ void CollectionInterface::getListsFromJson(void)
 		// Logic for autoCompletion -> URL
 		if (j.contains("autoCompletion")) {
 			std::string sAutoComp = "";
-			1;//::MessageBoxA(NULL, item.value()["id-name"].get<std::string>().c_str(), "IterateUdlList[id-name]: has autoCompletion", MB_OK);
 			if (j["autoCompletion"].is_boolean()) {
 				sAutoComp = udl_base + "autoCompletion/" + id_name + ".xml";
 			}
