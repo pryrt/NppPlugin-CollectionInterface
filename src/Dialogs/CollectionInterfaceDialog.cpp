@@ -195,40 +195,58 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 			std::string id_name = (pobjCI->revDISPLAY.count(sFilename)) ? pobjCI->revDISPLAY[sFilename] : "!!DoesNotExist!!";
 			std::string sURL = "";
-			std::string sPath = "";
+			std::wstring wsPath = L"";
+			auto string2wstring = [](std::string str) {
+				if (str.empty()) return std::wstring();
+				int wsz = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
+				std::wstring ret(wsz, 0);
+				MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), const_cast<LPWSTR>(ret.data()), wsz);
+				return ret;
+			};
+			std::wstring wsIdName = string2wstring(id_name);
 			if (sCategory == "UDL") {
 				if(pobjCI->mapUDL.count(id_name)) {
 					sURL = pobjCI->mapUDL[id_name];
 				}
-				// !!TODO!! Do not hardcode the path
-				sPath = "%AppData%/Notepad++/userDefineLangs/" + id_name + ".xml";
+
+				wsPath = pobjCI->nppCfgUdlDir() + L"\\" + wsIdName + L".xml";
 			}
 			else if (sCategory == "AutoCompletion") {
 				if (pobjCI->mapAC.count(id_name)) {
 					sURL = pobjCI->mapAC[id_name];
 				}
-				// !!TODO!! Do not hardcode the path
-				sPath = "c:/Program Files/Notepad++/autoCompletion/" + id_name + ".xml";
+
+				wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + wsIdName + L".xml";
 			}
 			else if (sCategory == "FunctionList") {
 				if (pobjCI->mapFL.count(id_name)) {
 					sURL = pobjCI->mapFL[id_name];
 				}
-				// !!TODO!! Do not hardcode the path
-				sPath = "%AppData%/Notepad++/functionList/" + id_name + ".xml";
+
+				wsPath = pobjCI->nppCfgFunctionListDir() + L"\\" + wsIdName + L".xml";
 			}
 			else if (sCategory == "Theme") {
 				sURL = "https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + sFilename;
-				// !!TODO!! Do not hardcode the path
-				sPath = "%AppData%/Notepad++/themes/" + sFilename;
+
+				wsPath = pobjCI->nppCfgThemesDir() + L"\\" + string2wstring(sFilename);
 			}
+
+			auto wstring2string = [](std::wstring ws) {
+				if (ws.empty()) return std::string();
+				int sz = WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), static_cast<int>(ws.size()), NULL, 0, NULL, NULL);
+				std::string ret(sz, 0);
+				WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), static_cast<int>(ws.size()), const_cast<LPSTR>(ret.data()), sz, NULL, NULL);
+				return ret;
+			};
+			std::string sPath = wstring2string(wsPath);
 
 			std::string sMessage = "";
 			sMessage += "CATEGORY: " + sCategory + "\n";
 			sMessage += "FILENAME: " + sFilename + "\n";
 			sMessage += "URL:      " + sURL + "\n";
-			sMessage += "PATH:     " + sPath;
+			sMessage += "PATH:     " + sPath + "\n";
 			::MessageBoxA(NULL, sMessage.c_str(), "TODO: Download", MB_OK);
+
 			pobjCI->downloadFileToDisk(sURL, sPath);
 		}
 		return true;

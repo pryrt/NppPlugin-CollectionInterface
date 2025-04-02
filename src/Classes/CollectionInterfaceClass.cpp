@@ -99,10 +99,33 @@ bool CollectionInterface::downloadFileToDisk(const std::string& url, const std::
 		std::string errmsg = "ExpandEnvirontmentStrings(" + path + ") failed: " + std::to_string(GetLastError()) + "\n";
 		throw std::runtime_error(errmsg.c_str());
 	}
+	auto delNull = [](std::string& str) {
+		const auto pos = str.find('\0');
+		if (pos != std::string::npos) {
+			str.erase(pos);
+		}
+	};
+	delNull(expandedPath);
 
 	HANDLE hFile = CreateFileA(expandedPath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
-		std::string errmsg = "CreateFile(" + expandedPath + ") failed: " + std::to_string(GetLastError()) + "\n";
+		DWORD errNum = GetLastError();
+		LPSTR messageBuffer = nullptr;
+		FormatMessageA(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			errNum,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPSTR)&messageBuffer,
+			0,
+			NULL
+		);
+
+		std::string errmsg = "CreateFile(" + expandedPath + ") failed: " + std::to_string(GetLastError()) + " => " + messageBuffer + "\n";
+		::MessageBoxA(NULL, errmsg.c_str(), "Command Error", MB_ICONERROR);
+
+		LocalFree(messageBuffer);
+
 		throw std::runtime_error(errmsg.c_str());
 	}
 

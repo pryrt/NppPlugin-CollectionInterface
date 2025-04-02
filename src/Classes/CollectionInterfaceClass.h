@@ -25,11 +25,17 @@ public:
 	// Themes are just a simple list
 	std::vector<std::string> vThemeFiles;
 
-
 	// Methods
 	std::vector<char> downloadFileInMemory(const std::string& url);
 	bool downloadFileToDisk(const std::string& url, const std::string& path);
 	void getListsFromJson(void);
+	// getter methods
+	std::wstring nppCfgDir(void) { return _nppCfgDir; };
+	std::wstring nppCfgUdlDir(void) { return _nppCfgUdlDir; };
+	std::wstring nppCfgFunctionListDir(void) { return _nppCfgFunctionListDir; };
+	std::wstring nppCfgAutoCompletionDir(void) { return _nppCfgAutoCompletionDir; };
+	std::wstring nppCfgThemesDir(void) { return _nppCfgThemesDir; };
+
 private:
 	std::string _xml_unentity(const std::string& text);
 
@@ -41,5 +47,6 @@ private:
 		_nppCfgFunctionListDir,
 		_nppCfgAutoCompletionDir,
 		_nppCfgThemesDir;
+
 	HWND _hwndNPP;
 };
