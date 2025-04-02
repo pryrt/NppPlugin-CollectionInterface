@@ -5,11 +5,14 @@
 #include <stdexcept>
 #include <windows.h>
 #include <wininet.h>
+#include <pathcch.h>
+#include "PluginDefinition.h"
+
 
 class CollectionInterface {
 public:
 	// Grabs the UDL List and Themes list from the collections, and populates the vector<wstring> lists
-	CollectionInterface(void);
+	CollectionInterface(HWND hwndNpp);
 
 	// new structure is just a separate map for each id-to-URL
 	std::map<std::string, std::string>
@@ -22,9 +25,21 @@ public:
 	// Themes are just a simple list
 	std::vector<std::string> vThemeFiles;
 
+
 	// Methods
 	std::vector<char> downloadFileInMemory(const std::string& url);
+	bool downloadFileToDisk(const std::string& url, const std::string& path);
 	void getListsFromJson(void);
 private:
 	std::string _xml_unentity(const std::string& text);
+
+	// Npp Metadata
+	void _populateNppDirs(void);
+	std::wstring
+		_nppCfgDir,
+		_nppCfgUdlDir,
+		_nppCfgFunctionListDir,
+		_nppCfgAutoCompletionDir,
+		_nppCfgThemesDir;
+	HWND _hwndNPP;
 };

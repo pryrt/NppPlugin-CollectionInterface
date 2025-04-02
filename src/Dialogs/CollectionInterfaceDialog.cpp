@@ -65,7 +65,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		const int index2Begin = 0;	// start with UDL selected
 		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
 
-		pobjCI = new CollectionInterface;
+		pobjCI = new CollectionInterface(hParent);
 		//pobjCI->getListsFromJson();
 		_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 	}
@@ -195,27 +195,41 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 			std::string id_name = (pobjCI->revDISPLAY.count(sFilename)) ? pobjCI->revDISPLAY[sFilename] : "!!DoesNotExist!!";
 			std::string sURL = "";
+			std::string sPath = "";
 			if (sCategory == "UDL") {
 				if(pobjCI->mapUDL.count(id_name)) {
 					sURL = pobjCI->mapUDL[id_name];
 				}
+				// !!TODO!! Do not hardcode the path
+				sPath = "%AppData%/Notepad++/userDefineLangs/" + id_name + ".xml";
 			}
 			else if (sCategory == "AutoCompletion") {
 				if (pobjCI->mapAC.count(id_name)) {
 					sURL = pobjCI->mapAC[id_name];
 				}
+				// !!TODO!! Do not hardcode the path
+				sPath = "c:/Program Files/Notepad++/autoCompletion/" + id_name + ".xml";
 			}
 			else if (sCategory == "FunctionList") {
 				if (pobjCI->mapFL.count(id_name)) {
 					sURL = pobjCI->mapFL[id_name];
 				}
+				// !!TODO!! Do not hardcode the path
+				sPath = "%AppData%/Notepad++/functionList/" + id_name + ".xml";
 			}
 			else if (sCategory == "Theme") {
 				sURL = "https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + sFilename;
+				// !!TODO!! Do not hardcode the path
+				sPath = "%AppData%/Notepad++/themes/" + sFilename;
 			}
 
-			std::string sMessage = "TODO: Download(" + sCategory + ", " + sFilename + ") => " + sURL;
+			std::string sMessage = "";
+			sMessage += "CATEGORY: " + sCategory + "\n";
+			sMessage += "FILENAME: " + sFilename + "\n";
+			sMessage += "URL:      " + sURL + "\n";
+			sMessage += "PATH:     " + sPath;
 			::MessageBoxA(NULL, sMessage.c_str(), "TODO: Download", MB_OK);
+			pobjCI->downloadFileToDisk(sURL, sPath);
 		}
 		return true;
 		default:
