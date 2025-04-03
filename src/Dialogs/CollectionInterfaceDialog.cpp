@@ -196,12 +196,14 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
 			std::wstring wsURL = L"";
 			std::wstring wsPath = L"";
+			bool isWritable = false;
 			if (wsCategory == L"UDL") {
 				if(pobjCI->mapUDL.count(ws_id_name)) {
 					wsURL = pobjCI->mapUDL[ws_id_name];
 				}
 
 				wsPath = pobjCI->nppCfgUdlDir() + L"\\" + ws_id_name + L".xml";
+				isWritable = pobjCI->isUdlDirWritable();
 			}
 			else if (wsCategory == L"AutoCompletion") {
 				if (pobjCI->mapAC.count(ws_id_name)) {
@@ -209,6 +211,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 
 				wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + ws_id_name + L".xml";
+				isWritable = pobjCI->isAutoCompletionDirWritable();
 			}
 			else if (wsCategory == L"FunctionList") {
 				if (pobjCI->mapFL.count(ws_id_name)) {
@@ -216,21 +219,30 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 
 				wsPath = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
+				isWritable = pobjCI->isFunctionListDirWritable();
 			}
 			else if (wsCategory == L"Theme") {
 				wsURL = L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + wsFilename;
 
 				wsPath = pobjCI->nppCfgThemesDir() + L"\\" + wsFilename;
+				isWritable = pobjCI->isThemesDirWritable();
 			}
 
-			std::wstring wsMessage = L"";
-			wsMessage += L"CATEGORY: " + wsCategory + L"\n";
-			wsMessage += L"FILENAME: " + wsFilename + L"\n";
-			wsMessage += L"URL:      " + wsURL + L"\n";
-			wsMessage += L"PATH:     " + wsPath + L"\n";
-			::MessageBox(NULL, wsMessage.c_str(), L"TODO: Download", MB_OK);
-
-			pobjCI->downloadFileToDisk(wsURL, wsPath);
+			if (isWritable) {
+				// download directly to the final destination
+				pobjCI->downloadFileToDisk(wsURL, wsPath);
+				std::wstring msg = L"Downloaded to " + wsPath;
+				::MessageBox(hwndDlg, msg.c_str(), L"Download Successful", MB_OK);
+			}
+			else {
+				// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
+				std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
+				pobjCI->downloadFileToDisk(wsURL, tmpPath);
+				std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + wsPath;
+				std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + wsPath + L"\"";
+				ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+				::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
+			}
 		}
 		return true;
 		default:

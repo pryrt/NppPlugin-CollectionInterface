@@ -110,13 +110,7 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 		std::wstring errmsg = L"ExpandEnvirontmentStrings(" + path + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
 		throw wruntime_error(errmsg.c_str());
 	}
-	auto delwNull = [](std::wstring& str) {
-		const auto pos = str.find(L'\0');
-		if (pos != std::wstring::npos) {
-			str.erase(pos);
-		}
-		};
-	delwNull(expandedPath);
+	_wsDeleteTrailingNulls(expandedPath);
 
 	HANDLE hFile = CreateFile(expandedPath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
@@ -331,4 +325,75 @@ void CollectionInterface::getListsFromJson(void)
 	}
 
 	return;
+}
+
+std::wstring& CollectionInterface::_wsDeleteTrailingNulls(std::wstring& str)
+{
+	const auto pos = str.find(L'\0');
+	if (pos != std::wstring::npos) {
+		str.erase(pos);
+	}
+	return str;
+}
+
+bool CollectionInterface::_is_dir_writable(const std::wstring& path)
+{
+	std::wstring tmpFileName = path;
+	_wsDeleteTrailingNulls(tmpFileName);
+	tmpFileName += L"\\~$TMPFILE.PRYRT";
+
+	HANDLE hFile = CreateFile(tmpFileName.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		DWORD errNum = GetLastError();
+		if (errNum != ERROR_ACCESS_DENIED) {
+			std::wstring errmsg = L"_is_dir_writable::CreateFile[tmp](" + tmpFileName + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
+			throw wruntime_error(errmsg.c_str());
+		}
+		return false;
+	}
+	CloseHandle(hFile);
+	DeleteFile(tmpFileName.c_str());
+	return true;
+}
+
+std::wstring CollectionInterface::getWritableTempDir(void)
+{
+	// first try the system TEMP
+	std::wstring tempDir(MAX_PATH+1, L'\0');
+	GetTempPath2(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
+	_wsDeleteTrailingNulls(tempDir);
+
+	// if that fails, try c:\tmp or c:\temp
+	if (!_is_dir_writable(tempDir)) {
+		tempDir = L"c:\\temp";
+		_wsDeleteTrailingNulls(tempDir);
+	}
+	if (!_is_dir_writable(tempDir)) {
+		tempDir = L"c:\\tmp";
+		_wsDeleteTrailingNulls(tempDir);
+	}
+
+	// if that fails, try the %USERPROFILE%
+	if (!_is_dir_writable(tempDir)) {
+		tempDir.resize(MAX_PATH + 1);
+		if (!ExpandEnvironmentStrings(L"%USERPROFILE%", const_cast<LPWSTR>(tempDir.data()), MAX_PATH + 1)) {
+			std::wstring errmsg = L"getWritableTempDir::ExpandEnvirontmentStrings(%USERPROFILE%) failed: " + std::to_wstring(GetLastError()) + L"\n";
+			throw wruntime_error(errmsg.c_str());
+		}
+		_wsDeleteTrailingNulls(tempDir);
+	}
+
+	// last try: current directory
+	if (!_is_dir_writable(tempDir)) {
+		tempDir.resize(MAX_PATH + 1);
+		GetCurrentDirectory(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
+		_wsDeleteTrailingNulls(tempDir);
+	}
+
+	// if that fails, no other ideas
+	if (!_is_dir_writable(tempDir)) {
+		std::wstring errmsg = L"getWritableTempDir() cannot find any writable directory; please make sure %TEMP% is defined and writable\n";
+		throw wruntime_error(errmsg.c_str());
+	}
+	return tempDir;
 }

@@ -33,6 +33,7 @@ public:
 	//bool downloadFileToDisk(const std::string& url, const std::wstring& path);
 	bool downloadFileToDisk(const std::wstring& url, const std::wstring& path);
 	void getListsFromJson(void);
+
 	// getter methods
 	std::wstring nppCfgDir(void) { return _nppCfgDir; };
 	std::wstring nppCfgUdlDir(void) { return _nppCfgUdlDir; };
@@ -40,8 +41,20 @@ public:
 	std::wstring nppCfgAutoCompletionDir(void) { return _nppCfgAutoCompletionDir; };
 	std::wstring nppCfgThemesDir(void) { return _nppCfgThemesDir; };
 
+	// status methods
+	bool isUdlDirWritable(void) { return _is_dir_writable(_nppCfgUdlDir); };
+	bool isFunctionListDirWritable(void) { return _is_dir_writable(_nppCfgFunctionListDir); };
+	bool isAutoCompletionDirWritable(void) { return _is_dir_writable(_nppCfgAutoCompletionDir); };
+	bool isThemesDirWritable(void) { return _is_dir_writable(_nppCfgThemesDir); };
+
+	// if the chosen directory isn't writable, need to be able to use a directory that _is_ writable
+	//	as a TempDir, and then will need to use runas to copy from the TempDir to the real dir.
+	std::wstring getWritableTempDir(void);
+
 private:
 	std::string _xml_unentity(const std::string& text);
+	std::wstring& _wsDeleteTrailingNulls(std::wstring& text);
+	bool _is_dir_writable(const std::wstring& path);
 
 	// Npp Metadata
 	void _populateNppDirs(void);
