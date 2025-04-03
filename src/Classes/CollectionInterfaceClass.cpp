@@ -2,6 +2,17 @@
 // nlohmann/json.hpp
 #include "json.hpp"
 
+
+class wruntime_error : public std::runtime_error {
+public:
+	wruntime_error(const std::wstring& msg) : runtime_error("Error!"), message(msg) {};
+
+	std::wstring get_message() { return message; }
+
+private:
+	std::wstring message;
+};
+
 CollectionInterface::CollectionInterface(HWND hwndNpp) {
 	_hwndNPP = hwndNpp;
 	_populateNppDirs();
@@ -14,12 +25,12 @@ void CollectionInterface::_populateNppDirs(void) {
 		if (pos != std::wstring::npos) {
 			str.erase(pos);
 		}
-	};
+		};
 
 	// %AppData%\Notepad++\Plugins\Config or equiv
 	LRESULT sz = 1 + ::SendMessage(_hwndNPP, NPPM_GETPLUGINSCONFIGDIR, 0, NULL);
 	std::wstring pluginCfgDir(sz, '\0');
-	::SendMessageA(_hwndNPP, NPPM_GETPLUGINSCONFIGDIR, sz, reinterpret_cast<LPARAM>(pluginCfgDir.data()));
+	::SendMessage(_hwndNPP, NPPM_GETPLUGINSCONFIGDIR, sz, reinterpret_cast<LPARAM>(pluginCfgDir.data()));
 	delNull(pluginCfgDir);
 
 	// %AppData%\Notepad++\Plugins or equiv
@@ -53,14 +64,14 @@ void CollectionInterface::_populateNppDirs(void) {
 	return;
 }
 
-std::vector<char> CollectionInterface::downloadFileInMemory(const std::string& url)
+std::vector<char> CollectionInterface::downloadFileInMemory(const std::wstring& url)
 {
-	HINTERNET hInternet = InternetOpenA("CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	HINTERNET hInternet = InternetOpen(L"CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL) {
 		throw std::runtime_error("InternetOpen failed");
 	}
 
-	HINTERNET hConnect = InternetOpenUrlA(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
+	HINTERNET hConnect = InternetOpenUrl(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
 	if (hConnect == NULL) {
 		std::string errmsg = "InternetOpenUrl failed: " + std::to_string(GetLastError()) + "\n";
 		throw std::runtime_error(errmsg.c_str());
@@ -80,53 +91,53 @@ std::vector<char> CollectionInterface::downloadFileInMemory(const std::string& u
 	return response_data;
 }
 
-bool CollectionInterface::downloadFileToDisk(const std::string& url, const std::string& path)
+bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std::wstring& path)
 {
-	HINTERNET hInternet = InternetOpenA("CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	HINTERNET hInternet = InternetOpen(L"CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL) {
-		throw std::runtime_error("InternetOpen failed");
+		throw wruntime_error(L"InternetOpen failed");
 	}
 
-	HINTERNET hConnect = InternetOpenUrlA(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
+	HINTERNET hConnect = InternetOpenUrl(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
 	if (hConnect == NULL) {
 		std::string errmsg = "InternetOpenUrl failed: " + std::to_string(GetLastError()) + "\n";
 		throw std::runtime_error(errmsg.c_str());
 	}
 
 	DWORD dwExSize = 2 * static_cast<DWORD>(path.size());
-	std::string expandedPath(dwExSize, '\0');
-	if (!ExpandEnvironmentStringsA(path.c_str(), const_cast<char*>(expandedPath.data()), dwExSize)) {
-		std::string errmsg = "ExpandEnvirontmentStrings(" + path + ") failed: " + std::to_string(GetLastError()) + "\n";
-		throw std::runtime_error(errmsg.c_str());
+	std::wstring expandedPath(dwExSize, L'\0');
+	if (!ExpandEnvironmentStrings(path.c_str(), const_cast<LPWSTR>(expandedPath.data()), dwExSize)) {
+		std::wstring errmsg = L"ExpandEnvirontmentStrings(" + path + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
+		throw wruntime_error(errmsg.c_str());
 	}
-	auto delNull = [](std::string& str) {
-		const auto pos = str.find('\0');
-		if (pos != std::string::npos) {
+	auto delwNull = [](std::wstring& str) {
+		const auto pos = str.find(L'\0');
+		if (pos != std::wstring::npos) {
 			str.erase(pos);
 		}
-	};
-	delNull(expandedPath);
+		};
+	delwNull(expandedPath);
 
-	HANDLE hFile = CreateFileA(expandedPath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFile(expandedPath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		DWORD errNum = GetLastError();
-		LPSTR messageBuffer = nullptr;
-		FormatMessageA(
+		LPWSTR messageBuffer = nullptr;
+		FormatMessage(
 			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL,
 			errNum,
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPSTR)&messageBuffer,
+			(LPWSTR)&messageBuffer,
 			0,
 			NULL
 		);
 
-		std::string errmsg = "CreateFile(" + expandedPath + ") failed: " + std::to_string(GetLastError()) + " => " + messageBuffer + "\n";
-		::MessageBoxA(NULL, errmsg.c_str(), "Command Error", MB_ICONERROR);
+		std::wstring errmsg = L"CreateFile(" + expandedPath + L") failed: " + std::to_wstring(GetLastError()) + L" => " + messageBuffer + L"\n";
+		::MessageBox(NULL, errmsg.c_str(), L"Command Error", MB_ICONERROR);
 
 		LocalFree(messageBuffer);
 
-		throw std::runtime_error(errmsg.c_str());
+		throw wruntime_error(errmsg.c_str());
 	}
 
 	std::vector<char> buffer(4096);
@@ -134,8 +145,8 @@ bool CollectionInterface::downloadFileToDisk(const std::string& url, const std::
 		// read a chunk from the webfile
 		BOOL stat = InternetReadFile(hConnect, buffer.data(), static_cast<DWORD>(buffer.size()), &dwBytesRd);
 		if (!stat) {
-			std::string errmsg = "InternetReadFile(" + url + ") failed: " + std::to_string(GetLastError()) + "\n";
-			throw std::runtime_error(errmsg.c_str());
+			std::wstring errmsg = L"InternetReadFile(" + url + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
+			throw wruntime_error(errmsg.c_str());
 		}
 
 		// don't need to write if no bytes were read (ie, EOF)
@@ -145,8 +156,8 @@ bool CollectionInterface::downloadFileToDisk(const std::string& url, const std::
 		DWORD dwBytesWr = 0;
 		stat = WriteFile(hFile, buffer.data(), dwBytesRd, &dwBytesWr, NULL);
 		if (!stat) {
-			std::string errmsg = "WriteFile(" + expandedPath + ") failed: " + std::to_string(GetLastError()) + "\n";
-			throw std::runtime_error(errmsg.c_str());
+			std::wstring errmsg = L"WriteFile(" + expandedPath + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
+			throw wruntime_error(errmsg.c_str());
 		}
 	}
 
@@ -208,107 +219,113 @@ std::string CollectionInterface::_xml_unentity(const std::string& text)
 
 void CollectionInterface::getListsFromJson(void)
 {
+	auto string2wstring = [](std::string str) {
+		if (str.empty()) return std::wstring();
+		int wsz = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
+		std::wstring ret(wsz, 0);
+		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), const_cast<LPWSTR>(ret.data()), wsz);
+		return ret;
+		};
+
 	////////////////////////////////
 	// Process Theme JSON
 	////////////////////////////////
 	// TODO:
-	std::vector<char> vcThemeJSON = downloadFileInMemory("https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/master/themes/.toc.json");
+	std::vector<char> vcThemeJSON = downloadFileInMemory(L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/master/themes/.toc.json");
 	nlohmann::json jTheme = nlohmann::json::parse(vcThemeJSON);
 	std::string v = jTheme.at(0).get<std::string>();
 	for (const auto& item : jTheme.items()) {
-		vThemeFiles.push_back(item.value().get<std::string>().c_str());
+		std::wstring ws = string2wstring(item.value().get<std::string>());
+		vThemeFiles.push_back(ws.c_str());
 		//!!	::MessageBoxA(NULL, item.value().get<std::string>().c_str(), "IterateThemes", MB_OK);
 	}
 
 	////////////////////////////////
 	// Process UDL JSON
 	////////////////////////////////
-	std::vector<char> vcUdlJSON = downloadFileInMemory("https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/refs/heads/master/udl-list.json");
+	std::vector<char> vcUdlJSON = downloadFileInMemory(L"https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/refs/heads/master/udl-list.json");
 	nlohmann::json jUdl = nlohmann::json::parse(vcUdlJSON);
 	// for a list, the key() is just the index, and the value() is the sub-object
 	for (const auto& item : jUdl["UDLs"].items()) {
 		auto j = item.value();
-		std::string id_name = j["id-name"].get<std::string>();
-		std::string udl_base = "https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/master/";
+		std::wstring ws_id_name = string2wstring(j["id-name"].get<std::string>());
+		std::wstring udl_base = L"https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/master/";
 
 		// Logic for UDL -> URL
 		if (j.contains("repository")) {
-			std::string sUDL = "";
+			std::wstring sUDL = L"";
 			if (j["repository"].is_boolean()) {		// URL repo should never be boolean; but if it is, generate default URL
-				sUDL = udl_base + "UDLs/" + id_name + ".xml";
+				sUDL = udl_base + L"UDLs/" + ws_id_name + L".xml";
 			}
 			if (j["repository"].is_string()) {
-				std::string s = j["repository"].get<std::string>();
-				if (s == "") {
-					sUDL = udl_base + "UDLs/" + id_name + ".xml";
+				std::wstring ws = string2wstring(j["repository"].get<std::string>());
+				if (ws == L"") {
+					sUDL = udl_base + L"UDLs/" + ws_id_name + L".xml";
 				}
-				else if (s.find("http") == 0) {	// if string _starts_ with http or https, it's the full URL
-					sUDL = s;
+				else if (ws.find(L"http") == 0) {	// if string _starts_ with http or https, it's the full URL
+					sUDL = ws;
 				}
 			}
 
 			// assign into the data structure...
-			if (sUDL != "") {
-				mapUDL[id_name] = sUDL;
+			if (sUDL != L"") {
+				mapUDL[ws_id_name] = sUDL;
 			}
 		}
 
 		// Extract display-name
 		if (j.contains("display-name")) {
-			std::string display_name = _xml_unentity(j["display-name"].get<std::string>());
-
-			if (display_name != j["display-name"].get<std::string>()) {
-				std::string msg = "Convert\n" + j["display-name"].get<std::string>() + "\ninto\n" + display_name;
-			}
+			std::wstring wdisplay_name = string2wstring(_xml_unentity(j["display-name"].get<std::string>()));
 
 			// assign into the data structure...
-			if (display_name != "") {
-				mapDISPLAY[id_name] = display_name;
-				revDISPLAY[display_name] = id_name;
+			if (wdisplay_name != L"") {
+				mapDISPLAY[ws_id_name] = wdisplay_name;
+				revDISPLAY[wdisplay_name] = ws_id_name;
 			}
 		}
 
 		// Logic for functionList -> URL
 		if (j.contains("functionList")) {
-			std::string sFuncList = "";
+			std::wstring wsFuncList = L"";
 			if (j["functionList"].is_boolean() && j["functionList"].get<bool>()) {
-				sFuncList = udl_base + "functionList/" + id_name + ".xml";
+				wsFuncList = udl_base + L"functionList/" + ws_id_name + L".xml";
 			}
 			if (j["functionList"].is_string()) {
-				std::string s = j["functionList"].get<std::string>();
-				if (s.find("http") == 0) {	// if string _starts_ with http or https, it's the full URL
-					sFuncList = s;
+				std::wstring ws = string2wstring(j["functionList"].get<std::string>());
+
+				if (ws.find(L"http") == 0) {	// if string _starts_ with http or https, it's the full URL
+					wsFuncList = ws;
 				}
 				else {
-					sFuncList = udl_base + "functionList/" + s + ".xml";
+					wsFuncList = udl_base + L"functionList/" + ws + L".xml";
 				}
 			}
 
-			// assign sFuncList into the data structure...
-			if (sFuncList != "") {
-				mapFL[id_name] = sFuncList;
+			// assign wsFuncList into the data structure...
+			if (wsFuncList != L"") {
+				mapFL[ws_id_name] = wsFuncList;
 			}
 		}
 
 		// Logic for autoCompletion -> URL
 		if (j.contains("autoCompletion")) {
-			std::string sAutoComp = "";
+			std::wstring wsAutoComp = L"";
 			if (j["autoCompletion"].is_boolean()) {
-				sAutoComp = udl_base + "autoCompletion/" + id_name + ".xml";
+				wsAutoComp = udl_base + L"autoCompletion/" + ws_id_name + L".xml";
 			}
 			if (j["autoCompletion"].is_string()) {
-				auto s = j["autoCompletion"].get<std::string>();
-				if (s.find("http") == 0) {
-					sAutoComp = s;
+				std::wstring ws = string2wstring(j["autoCompletion"].get<std::string>());
+				if (ws.find(L"http") == 0) {
+					wsAutoComp = ws;
 				}
 				else {
-					sAutoComp = udl_base + "autoCompletion/" + s + ".xml";
+					wsAutoComp = udl_base + L"autoCompletion/" + ws + L".xml";
 				}
 			}
 
 			// assign sAutoComp into the data structure...
-			if (sAutoComp != "") {
-				mapAC[id_name] = sAutoComp;
+			if (wsAutoComp != L"") {
+				mapAC[ws_id_name] = wsAutoComp;
 			}
 		}
 	}

@@ -28,8 +28,8 @@
 #include <vector>
 
 CollectionInterface* pobjCI;
-void _populate_file_cbx(HWND hwndDlg, std::vector<std::string>& vsList);
-void _populate_file_cbx(HWND hwndDlg, std::map<std::string, std::string>& mapURLs, std::map<std::string, std::string>& mapDisplay);
+void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList);
+void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring, std::wstring>& mapURLs, std::map<std::wstring, std::wstring>& mapDisplay);
 
 #pragma warning(push)
 #pragma warning(disable: 4100)
@@ -174,10 +174,10 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				return true;
 			}
 
-			// use the ASCII version, because the mapping is in std::string, not std::wstring, to avoid multiple conversions
-			LRESULT needCatLen = ::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedCatIndex, 0);
-			std::string sCategory(needCatLen, 0);
-			::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedCatIndex, reinterpret_cast<LPARAM>(sCategory.data()));
+			// using the W/::wstring versions
+			LRESULT needCatLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedCatIndex, 0);
+			std::wstring wsCategory(needCatLen, 0);
+			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedCatIndex, reinterpret_cast<LPARAM>(wsCategory.data()));
 
 			LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETCURSEL, 0, 0);
 			switch (selectedFileIndex) {
@@ -189,65 +189,48 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				return true;
 			}
 
-			LRESULT needFileLen = ::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXTLEN, selectedFileIndex, 0);
-			std::string sFilename(needFileLen, 0);
-			::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(sFilename.data()));
+			LRESULT needFileLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXTLEN, selectedFileIndex, 0);
+			std::wstring wsFilename(needFileLen, 0);
+			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
 
-			std::string id_name = (pobjCI->revDISPLAY.count(sFilename)) ? pobjCI->revDISPLAY[sFilename] : "!!DoesNotExist!!";
-			std::string sURL = "";
+			std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
+			std::wstring wsURL = L"";
 			std::wstring wsPath = L"";
-			auto string2wstring = [](std::string str) {
-				if (str.empty()) return std::wstring();
-				int wsz = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
-				std::wstring ret(wsz, 0);
-				MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), const_cast<LPWSTR>(ret.data()), wsz);
-				return ret;
-			};
-			std::wstring wsIdName = string2wstring(id_name);
-			if (sCategory == "UDL") {
-				if(pobjCI->mapUDL.count(id_name)) {
-					sURL = pobjCI->mapUDL[id_name];
+			if (wsCategory == L"UDL") {
+				if(pobjCI->mapUDL.count(ws_id_name)) {
+					wsURL = pobjCI->mapUDL[ws_id_name];
 				}
 
-				wsPath = pobjCI->nppCfgUdlDir() + L"\\" + wsIdName + L".xml";
+				wsPath = pobjCI->nppCfgUdlDir() + L"\\" + ws_id_name + L".xml";
 			}
-			else if (sCategory == "AutoCompletion") {
-				if (pobjCI->mapAC.count(id_name)) {
-					sURL = pobjCI->mapAC[id_name];
+			else if (wsCategory == L"AutoCompletion") {
+				if (pobjCI->mapAC.count(ws_id_name)) {
+					wsURL = pobjCI->mapAC[ws_id_name];
 				}
 
-				wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + wsIdName + L".xml";
+				wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + ws_id_name + L".xml";
 			}
-			else if (sCategory == "FunctionList") {
-				if (pobjCI->mapFL.count(id_name)) {
-					sURL = pobjCI->mapFL[id_name];
+			else if (wsCategory == L"FunctionList") {
+				if (pobjCI->mapFL.count(ws_id_name)) {
+					wsURL = pobjCI->mapFL[ws_id_name];
 				}
 
-				wsPath = pobjCI->nppCfgFunctionListDir() + L"\\" + wsIdName + L".xml";
+				wsPath = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
 			}
-			else if (sCategory == "Theme") {
-				sURL = "https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + sFilename;
+			else if (wsCategory == L"Theme") {
+				wsURL = L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + wsFilename;
 
-				wsPath = pobjCI->nppCfgThemesDir() + L"\\" + string2wstring(sFilename);
+				wsPath = pobjCI->nppCfgThemesDir() + L"\\" + wsFilename;
 			}
 
-			auto wstring2string = [](std::wstring ws) {
-				if (ws.empty()) return std::string();
-				int sz = WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), static_cast<int>(ws.size()), NULL, 0, NULL, NULL);
-				std::string ret(sz, 0);
-				WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), static_cast<int>(ws.size()), const_cast<LPSTR>(ret.data()), sz, NULL, NULL);
-				return ret;
-			};
-			std::string sPath = wstring2string(wsPath);
+			std::wstring wsMessage = L"";
+			wsMessage += L"CATEGORY: " + wsCategory + L"\n";
+			wsMessage += L"FILENAME: " + wsFilename + L"\n";
+			wsMessage += L"URL:      " + wsURL + L"\n";
+			wsMessage += L"PATH:     " + wsPath + L"\n";
+			::MessageBox(NULL, wsMessage.c_str(), L"TODO: Download", MB_OK);
 
-			std::string sMessage = "";
-			sMessage += "CATEGORY: " + sCategory + "\n";
-			sMessage += "FILENAME: " + sFilename + "\n";
-			sMessage += "URL:      " + sURL + "\n";
-			sMessage += "PATH:     " + sPath + "\n";
-			::MessageBoxA(NULL, sMessage.c_str(), "TODO: Download", MB_OK);
-
-			pobjCI->downloadFileToDisk(sURL, sPath);
+			pobjCI->downloadFileToDisk(wsURL, wsPath);
 		}
 		return true;
 		default:
@@ -261,25 +244,25 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 }
 #pragma warning(pop)
 
-void _populate_file_cbx(HWND hwndDlg, std::vector<std::string>& vsList)
+void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList)
 {
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_RESETCONTENT, 0, 0);
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
 	for (auto& str : vsList) {
-		::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.data()));
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.data()));
 	}
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_SETCURSEL, 0, 0);
 	return;
 }
 
-void _populate_file_cbx(HWND hwndDlg, std::map<std::string,std::string>& mapURLs, std::map<std::string,std::string>& mapDisplay)
+void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring,std::wstring>& mapURLs, std::map<std::wstring,std::wstring>& mapDisplay)
 {
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_RESETCONTENT, 0, 0);
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
 	for (const auto& pair: mapURLs) {
 		auto key = pair.first;
 		if (mapDisplay.count(key)) {
-			::SendDlgItemMessageA(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(mapDisplay[key].data()));
+			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(mapDisplay[key].data()));
 		}
 	}
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_SETCURSEL, 0, 0);

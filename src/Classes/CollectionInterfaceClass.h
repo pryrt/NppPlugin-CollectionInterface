@@ -15,7 +15,7 @@ public:
 	CollectionInterface(HWND hwndNpp);
 
 	// new structure is just a separate map for each id-to-URL
-	std::map<std::string, std::string>
+	std::map<std::wstring, std::wstring>
 		mapUDL,			// [id_name] => UDL_URL
 		mapAC,			// [id_name] => AC_URL
 		mapFL,			// [id_name] => FL_URL
@@ -23,11 +23,15 @@ public:
 		revDISPLAY;		// [display_name] => id_name
 
 	// Themes are just a simple list
-	std::vector<std::string> vThemeFiles;
+	std::vector<std::wstring> vThemeFiles;
 
 	// Methods
-	std::vector<char> downloadFileInMemory(const std::string& url);
-	bool downloadFileToDisk(const std::string& url, const std::string& path);
+	//std::vector<char> downloadFileInMemory(const std::string& url);
+	std::vector<char> downloadFileInMemory(const std::wstring& url);
+	//bool downloadFileToDisk(const std::string& url, const std::string& path);
+	//bool downloadFileToDisk(const std::wstring& url, const std::string& path);
+	//bool downloadFileToDisk(const std::string& url, const std::wstring& path);
+	bool downloadFileToDisk(const std::wstring& url, const std::wstring& path);
 	void getListsFromJson(void);
 	// getter methods
 	std::wstring nppCfgDir(void) { return _nppCfgDir; };
