@@ -100,15 +100,15 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			}
 			return true;
 		case IDC_CI_COMBO_FILE:
-			if (HIWORD(wParam) == CBN_SELCHANGE) {
-				LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
+			if (HIWORD(wParam) == LBN_SELCHANGE) {
+				LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETCURSEL, 0, 0);
 				if (!selectedIndex) {
 					::MessageBox(NULL, L"Please pick a FILE, not <Pick File>", L"FILE selector", MB_ICONWARNING);
 				} 
-				else if (selectedIndex != CB_ERR) {
-					LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXTLEN, selectedIndex, 0);
+				else if (selectedIndex != LB_ERR) {
+					LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXTLEN, selectedIndex, 0);
 					std::wstring wsFilename(needLen, 0);
-					::SendMessage(reinterpret_cast<HWND>(lParam), CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
+					::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
 					//::MessageBox(NULL, wsFilename.c_str(), L"Which File:", MB_OK);
 				}
 			}
@@ -179,7 +179,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			std::wstring wsCategory(needCatLen, 0);
 			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedCatIndex, reinterpret_cast<LPARAM>(wsCategory.data()));
 
-			LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETCURSEL, 0, 0);
+			LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETCURSEL, 0, 0);
 			switch (selectedFileIndex) {
 			case CB_ERR:
 				::MessageBox(NULL, L"Could not understand FILE combobox; sorry", L"Download Error", MB_ICONERROR);
@@ -189,9 +189,9 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				return true;
 			}
 
-			LRESULT needFileLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXTLEN, selectedFileIndex, 0);
+			LRESULT needFileLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETTEXTLEN, selectedFileIndex, 0);
 			std::wstring wsFilename(needFileLen, 0);
-			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_GETLBTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
+			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
 
 			std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
 			std::wstring wsURL = L"";
@@ -258,25 +258,25 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList)
 {
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_RESETCONTENT, 0, 0);
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_RESETCONTENT, 0, 0);
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
 	for (auto& str : vsList) {
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.data()));
+		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.data()));
 	}
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_SETCURSEL, 0, 0);
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_SETCURSEL, 0, 0);
 	return;
 }
 
 void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring,std::wstring>& mapURLs, std::map<std::wstring,std::wstring>& mapDisplay)
 {
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_RESETCONTENT, 0, 0);
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_RESETCONTENT, 0, 0);
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
 	for (const auto& pair: mapURLs) {
 		auto key = pair.first;
 		if (mapDisplay.count(key)) {
-			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(mapDisplay[key].data()));
+			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(mapDisplay[key].data()));
 		}
 	}
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, CB_SETCURSEL, 0, 0);
+	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_SETCURSEL, 0, 0);
 	return;
 }

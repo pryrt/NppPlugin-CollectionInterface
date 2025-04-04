@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <windows.h>
+#include <winres.h>
 #include "resource.h"
 
 IDD_PLUGINGOLINE_DEMO DIALOGEX 26, 41, 223, 67
