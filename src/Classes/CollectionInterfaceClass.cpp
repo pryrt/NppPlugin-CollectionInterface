@@ -360,7 +360,7 @@ std::wstring CollectionInterface::getWritableTempDir(void)
 {
 	// first try the system TEMP
 	std::wstring tempDir(MAX_PATH+1, L'\0');
-	GetTempPath2(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
+	GetTempPath(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
 	_wsDeleteTrailingNulls(tempDir);
 
 	// if that fails, try c:\tmp or c:\temp
