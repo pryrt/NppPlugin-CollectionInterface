@@ -38,7 +38,7 @@ const TCHAR NPP_PLUGIN_NAME[] = TEXT("CollectionInterface");
 //
 // Here define the number of your plugin commands
 //
-const int nbFunc = 4;
+const int nbFunc = 5;
 
 
 //
@@ -77,5 +77,6 @@ void helloDlg();
 void showAbout();
 void showAboutModal();
 void showCollectionInterface();
+void showDelmeDialog();
 
 #endif //PLUGINDEFINITION_H
