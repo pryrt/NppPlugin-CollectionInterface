@@ -159,7 +159,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				);
 
 				wchar_t msg[4096];
-				swprintf_s(msg, L"Command: %s\n\nCode:    %d\nDesc:    [%lld]%s", cmd, errNum, size, messageBuffer);
+				swprintf_s(msg, L"Command: %s\n\nCode:    %d\nDesc:    [%lld]%s", cmd, errNum, static_cast<INT64>(size), messageBuffer);
 				::MessageBox(NULL, msg, L"Command Error", MB_ICONERROR);
 
 				LocalFree(messageBuffer);
