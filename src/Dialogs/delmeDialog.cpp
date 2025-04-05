@@ -26,15 +26,15 @@ INT_PTR CALLBACK delDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 		int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
 		::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW|SWP_NOSIZE);	// the SWP_NOSIZE will prevent resizing, so it just centers
 
-		// populate tab bar
+		// populate tab bar: "INSERTITEM" means RightToLeft, because it inserts it before the earlier tab.
 		std::wstring ws;
 		TCITEM pop;
 		pop.mask = TCIF_TEXT;
-		ws = L"TAB"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
+		ws = L"SOMETHING WITHOUT SUGAR"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
 		::SendDlgItemMessage(hwndDlg, IDC_TAB1, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
 		ws = L"PEPSI FREE"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
 		::SendDlgItemMessage(hwndDlg, IDC_TAB1, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
-		ws = L"WATER"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
+		ws = L"TAB"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
 		::SendDlgItemMessage(hwndDlg, IDC_TAB1, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
 		::SendDlgItemMessage(hwndDlg, IDC_TAB1, TCM_SETCURSEL, 0, 0);
 
@@ -47,16 +47,6 @@ INT_PTR CALLBACK delDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 		// set progress bar
 		::SendDlgItemMessage(hwndDlg, IDC_PROGRESS1, PBM_SETPOS, 55, 0);
-
-#if 0
-		// populate Category list
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"UDL"));
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"AutoCompletion"));
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"FunctionList"));
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Theme"));
-		const int index2Begin = 0;	// start with UDL selected
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
-#endif
 
 	}
 	return true;
