@@ -329,10 +329,7 @@ void CollectionInterface::getListsFromJson(void)
 
 std::wstring& CollectionInterface::_wsDeleteTrailingNulls(std::wstring& str)
 {
-	const auto pos = str.find(L'\0');
-	if (pos != std::wstring::npos) {
-		str.erase(pos);
-	}
+	str.resize(lstrlen(str.c_str()));
 	return str;
 }
 

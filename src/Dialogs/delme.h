@@ -10,7 +10,6 @@
 #define IDC_GITHUB                      1002
 #define IDC_CI_BTN_DONE                 1002
 #define IDC_CI_BTN_RESTART              1003
-#define IDC_CI_COMBO_CATEGORY           1004
 #define IDC_CI_COMBO_FILE               1005
 #define IDC_TAB1                        3001
 #define IDC_PROGRESS1                   3002

@@ -32,7 +32,6 @@
 #define IDC_CI_BTN_DOWNLOAD                     1001
 #define IDC_CI_BTN_DONE                         1002
 #define IDC_CI_BTN_RESTART                      1003
-#define IDC_CI_COMBO_CATEGORY                   1004
 #define IDC_CI_COMBO_FILE                       1005
 #define IDC_CI_TABCTRL                          1006
 #define IDC_CI_PROGRESSBAR                      1007

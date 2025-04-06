@@ -26,10 +26,12 @@
 #include "menuCmdID.h"
 #include <string>
 #include <vector>
+#include <CommCtrl.h>
 
 CollectionInterface* pobjCI;
 void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList);
 void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring, std::wstring>& mapURLs, std::map<std::wstring, std::wstring>& mapDisplay);
+std::wstring _get_tab_category_wstr(HWND hwndDlg, int idcTabCtrl);
 
 #pragma warning(push)
 #pragma warning(disable: 4100)
@@ -57,13 +59,22 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
 		::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
 
-		// populate Category list
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"UDL"));
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"AutoCompletion"));
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"FunctionList"));
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Theme"));
-		const int index2Begin = 0;	// start with UDL selected
-		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_SETCURSEL, index2Begin, 0);
+		// populate Category list into the tab bar: "INSERTITEM" means RightToLeft, because it inserts it before the earlier tab.
+		std::wstring ws;
+		TCITEM pop;
+		pop.mask = TCIF_TEXT;
+		ws = L"Theme"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
+		::SendDlgItemMessage(hwndDlg, IDC_CI_TABCTRL, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
+		ws = L"FunctionList"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
+		::SendDlgItemMessage(hwndDlg, IDC_CI_TABCTRL, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
+		ws = L"AutoCompletion"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
+		::SendDlgItemMessage(hwndDlg, IDC_CI_TABCTRL, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
+		ws = L"UDL"; pop.cchTextMax = static_cast<int>(ws.size()); pop.pszText = const_cast<LPWSTR>(ws.data());
+		::SendDlgItemMessage(hwndDlg, IDC_CI_TABCTRL, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
+		::SendDlgItemMessage(hwndDlg, IDC_CI_TABCTRL, TCM_SETCURSEL, 0, 0);
+
+		// set progress bar
+		::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
 
 		pobjCI = new CollectionInterface(hParent);
 		//pobjCI->getListsFromJson();
@@ -81,31 +92,10 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			delete pobjCI;
 			pobjCI = NULL;
 			return true;
-		case IDC_CI_COMBO_CATEGORY:
-			if (HIWORD(wParam) == CBN_SELCHANGE) {
-				LRESULT selectedIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETCURSEL, 0, 0);
-				if (selectedIndex != CB_ERR) {
-					LRESULT needLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedIndex, 0);
-					std::wstring wsCategory(needLen, 0);
-					::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsCategory.data()));
-					if (wsCategory == L"UDL")
-						_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
-					else if (wsCategory == L"AutoCompletion")
-						_populate_file_cbx(hwndDlg, pobjCI->mapAC, pobjCI->mapDISPLAY);
-					else if (wsCategory == L"FunctionList")
-						_populate_file_cbx(hwndDlg, pobjCI->mapFL, pobjCI->mapDISPLAY);
-					else if (wsCategory == L"Theme")
-						_populate_file_cbx(hwndDlg, pobjCI->vThemeFiles);
-				}
-			}
-			return true;
 		case IDC_CI_COMBO_FILE:
 			if (HIWORD(wParam) == LBN_SELCHANGE) {
 				LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETCURSEL, 0, 0);
-				if (!selectedIndex) {
-					::MessageBox(NULL, L"Please pick a FILE, not <Pick File>", L"FILE selector", MB_ICONWARNING);
-				} 
-				else if (selectedIndex != LB_ERR) {
+				if (selectedIndex != LB_ERR) {
 					LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXTLEN, selectedIndex, 0);
 					std::wstring wsFilename(needLen, 0);
 					::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
@@ -168,24 +158,11 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		return true;
 		case IDC_CI_BTN_DOWNLOAD:
 		{
-			LRESULT selectedCatIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETCURSEL, 0, 0);
-			if (selectedCatIndex == CB_ERR) {
-				::MessageBox(NULL, L"Could not understand CATEGORY; sorry", L"Download Error", MB_ICONERROR);
-				return true;
-			}
-
-			// using the W/::wstring versions
-			LRESULT needCatLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXTLEN, selectedCatIndex, 0);
-			std::wstring wsCategory(needCatLen, 0);
-			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_CATEGORY, CB_GETLBTEXT, selectedCatIndex, reinterpret_cast<LPARAM>(wsCategory.data()));
-
+			std::wstring wsCategory = _get_tab_category_wstr(hwndDlg, IDC_CI_TABCTRL);
 			LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETCURSEL, 0, 0);
 			switch (selectedFileIndex) {
 			case CB_ERR:
 				::MessageBox(NULL, L"Could not understand FILE combobox; sorry", L"Download Error", MB_ICONERROR);
-				return true;
-			case 0:
-				::MessageBox(NULL, L"Please pick a FILE, not <Pick File>", L"Download Error", MB_ICONERROR);
 				return true;
 			}
 
@@ -198,7 +175,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			std::wstring wsPath = L"";
 			bool isWritable = false;
 			if (wsCategory == L"UDL") {
-				if(pobjCI->mapUDL.count(ws_id_name)) {
+				if (pobjCI->mapUDL.count(ws_id_name)) {
 					wsURL = pobjCI->mapUDL[ws_id_name];
 				}
 
@@ -248,6 +225,22 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		default:
 			return false;
 		}
+	case WM_NOTIFY:
+	{
+		if ((wParam == IDC_CI_TABCTRL) && (((LPNMHDR)lParam)->code == TCN_SELCHANGE)) {
+			std::wstring wsCategory = _get_tab_category_wstr(hwndDlg, IDC_CI_TABCTRL);
+			if (wsCategory == L"UDL")
+				_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
+			else if (wsCategory == L"AutoCompletion")
+				_populate_file_cbx(hwndDlg, pobjCI->mapAC, pobjCI->mapDISPLAY);
+			else if (wsCategory == L"FunctionList")
+				_populate_file_cbx(hwndDlg, pobjCI->mapFL, pobjCI->mapDISPLAY);
+			else if (wsCategory == L"Theme")
+				_populate_file_cbx(hwndDlg, pobjCI->vThemeFiles);
+			return true;
+		}
+	}
+	return false;
 	case WM_DESTROY:
 		DestroyWindow(hwndDlg);
 		return true;
@@ -259,7 +252,6 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList)
 {
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_RESETCONTENT, 0, 0);
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
 	for (auto& str : vsList) {
 		::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str.data()));
 	}
@@ -267,11 +259,10 @@ void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList)
 	return;
 }
 
-void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring,std::wstring>& mapURLs, std::map<std::wstring,std::wstring>& mapDisplay)
+void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring, std::wstring>& mapURLs, std::map<std::wstring, std::wstring>& mapDisplay)
 {
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_RESETCONTENT, 0, 0);
-	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"<Pick File>"));
-	for (const auto& pair: mapURLs) {
+	for (const auto& pair : mapURLs) {
 		auto key = pair.first;
 		if (mapDisplay.count(key)) {
 			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(mapDisplay[key].data()));
@@ -279,4 +270,21 @@ void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring,std::wstring>& mapUR
 	}
 	::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_SETCURSEL, 0, 0);
 	return;
+}
+
+std::wstring _get_tab_category_wstr(HWND hwndDlg, int idcTabCtrl)
+{
+	std::wstring wsCategory(256, L'\0');
+	TCITEM tCatInfo = {};
+	tCatInfo.mask = TCIF_TEXT;
+	tCatInfo.pszText = const_cast<LPWSTR>(wsCategory.data());
+	tCatInfo.cchTextMax = static_cast<int>(wsCategory.size());
+	LRESULT selectedIndex = ::SendDlgItemMessage(hwndDlg, idcTabCtrl, TCM_GETCURSEL, 0, 0);
+	if (selectedIndex != -1) {
+		if (::SendDlgItemMessage(hwndDlg, idcTabCtrl, TCM_GETITEM, selectedIndex, reinterpret_cast<LPARAM>(&tCatInfo))) {
+			wsCategory.resize(lstrlen(wsCategory.c_str()));
+			return wsCategory;
+		}
+	}
+	return L"";
 }
