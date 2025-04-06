@@ -20,7 +20,6 @@
 #include "PluginDefinition.h"
 #include "menuCmdID.h"
 #include "resource.h"
-#include "delmeDialog.h"
 #include "AboutDialog.h"
 #include "CollectionInterfaceDialog.h"
 
@@ -71,7 +70,6 @@ void commandMenuInit()
     setCommand(1, TEXT(""), NULL, NULL, false);
     setCommand(2, TEXT("About (NonModal)"), showAbout, NULL, false);
     setCommand(3, TEXT("About (Modal)"), showAboutModal, NULL, false);
-    setCommand(4, TEXT("Experimental Dialog"), showDelmeDialog, NULL, false);
     //setCommand(4, TEXT(""), NULL, NULL, false);
     //setCommand(5, TEXT("Hello Notepad++"), hello, NULL, false);
     //setCommand(6, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
@@ -147,8 +145,4 @@ void showCollectionInterface()
     return;
 }
 
-void showDelmeDialog()
-{
-    DialogBoxParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_DIALOG1), nppData._nppHandle, (DLGPROC)delDlgProc, (LPARAM)NULL);
-    return;
-}
+

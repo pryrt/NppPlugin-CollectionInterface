@@ -15,9 +15,6 @@
     <ClCompile Include="..\src\Classes\CollectionInterfaceClass.cpp">
       <Filter>Classes</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Dialogs\delmeDialog.cpp">
-      <Filter>Dialogs</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\DockingFeature\Docking.h" />
@@ -52,12 +49,6 @@
     <ClInclude Include="..\src\Classes\json.hpp">
       <Filter>Classes</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Dialogs\delme.h">
-      <Filter>Dialogs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\Dialogs\delmeDialog.h">
-      <Filter>Dialogs</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\DockingFeature\goLine.rc" />
@@ -66,9 +57,6 @@
       <Filter>Dialogs</Filter>
     </ResourceCompile>
     <ResourceCompile Include="..\src\Dialogs\CollectionInterfaceDialog.rc">
-      <Filter>Dialogs</Filter>
-    </ResourceCompile>
-    <ResourceCompile Include="..\src\Dialogs\delme.rc">
       <Filter>Dialogs</Filter>
     </ResourceCompile>
   </ItemGroup>
