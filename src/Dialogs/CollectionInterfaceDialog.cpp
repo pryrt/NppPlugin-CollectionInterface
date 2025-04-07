@@ -247,12 +247,17 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			}
 			else {
 				// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
-				std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
-				pobjCI->downloadFileToDisk(wsURL, tmpPath);
-				std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + wsPath;
-				std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + wsPath + L"\"";
-				ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
-				::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
+				std::wstring wsAsk = L"Cannot write to " + wsPath;
+				wsAsk += L"\nI will try again with elevated UAC permission.";
+				int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
+				if (ans == IDOK) {
+					std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
+					pobjCI->downloadFileToDisk(wsURL, tmpPath);
+					std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + wsPath;
+					std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + wsPath + L"\"";
+					ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+					::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
+				}
 			}
 
 			// also download AC and FL, if applicable
@@ -260,17 +265,22 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			for (auto category : xtra) {
 				if (alsoDownload.count(category)) {
 					std::wstring xURL = alsoDownload[category][L"URL"];
-					std::wstring xPATH = alsoDownload[category][L"PATH"];
+					std::wstring xPath = alsoDownload[category][L"PATH"];
 					if (extraWritable[category]) {
-						pobjCI->downloadFileToDisk(xURL, xPATH);
+						pobjCI->downloadFileToDisk(xURL, xPath);
 					}
 					else {
 						// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
-						std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
-						pobjCI->downloadFileToDisk(xURL, tmpPath);
-						std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + xPATH;
-						std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + xPATH + L"\"";
-						ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+						std::wstring wsAsk = L"Cannot write to " + xPath;
+						wsAsk += L"\nI will try again with elevated UAC permission.";
+						int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
+						if (ans == IDOK) {
+							std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
+							pobjCI->downloadFileToDisk(xURL, tmpPath);
+							std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + xPath;
+							std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + xPath + L"\"";
+							ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+						}
 					}
 				}
 			}
