@@ -35,3 +35,5 @@
 #define IDC_CI_COMBO_FILE                       1005
 #define IDC_CI_TABCTRL                          1006
 #define IDC_CI_PROGRESSBAR                      1007
+#define IDC_CI_CHK_ALSO_FL                      1008
+#define IDC_CI_CHK_ALSO_AC                      1009

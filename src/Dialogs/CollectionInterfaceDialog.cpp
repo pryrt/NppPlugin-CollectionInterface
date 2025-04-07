@@ -73,6 +73,12 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		::SendDlgItemMessage(hwndDlg, IDC_CI_TABCTRL, TCM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&pop));
 		::SendDlgItemMessage(hwndDlg, IDC_CI_TABCTRL, TCM_SETCURSEL, 0, 0);
 
+		// disable options
+		HWND hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC);
+		EnableWindow(hwCHK, FALSE);	// ShowWindow(hwCHK, SW_HIDE);
+		hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
+		EnableWindow(hwCHK, FALSE);	// ShowWindow(hwCHK, SW_HIDE);
+
 		// set progress bar
 		::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
 
@@ -100,6 +106,14 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					std::wstring wsFilename(needLen, 0);
 					::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
 					//::MessageBox(NULL, wsFilename.c_str(), L"Which File:", MB_OK);
+
+					// look at pobjCI->revDISPLAY[]
+					std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
+					HWND hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC);
+					EnableWindow(hwCHK, static_cast<BOOL>(pobjCI->mapAC.count(ws_id_name)));
+					hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
+					EnableWindow(hwCHK, static_cast<BOOL>(pobjCI->mapFL.count(ws_id_name)));
+
 				}
 			}
 			return true;
@@ -174,6 +188,8 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			std::wstring wsURL = L"";
 			std::wstring wsPath = L"";
 			bool isWritable = false;
+			std::map<std::wstring, std::map<std::wstring, std::wstring>> alsoDownload;
+			std::map<std::wstring, bool> extraWritable;
 			if (wsCategory == L"UDL") {
 				if (pobjCI->mapUDL.count(ws_id_name)) {
 					wsURL = pobjCI->mapUDL[ws_id_name];
@@ -181,6 +197,24 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 				wsPath = pobjCI->nppCfgUdlDir() + L"\\" + ws_id_name + L".xml";
 				isWritable = pobjCI->isUdlDirWritable();
+
+				// if chkAC, then also download AC
+				bool isCHK = BST_CHECKED == IsDlgButtonChecked(hwndDlg, IDC_CI_CHK_ALSO_AC);
+				bool isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC));
+				if (isEN && isCHK && pobjCI->mapAC.count(ws_id_name)) {
+					alsoDownload[L"AC"][L"URL"] = pobjCI->mapAC[ws_id_name];
+					alsoDownload[L"AC"][L"PATH"] = pobjCI->nppCfgAutoCompletionDir() + L"\\" + ws_id_name + L".xml";
+					extraWritable[L"AC"] = pobjCI->isAutoCompletionDirWritable();
+				}
+
+				// if cjkFL, then also download FL
+				isCHK = BST_CHECKED == IsDlgButtonChecked(hwndDlg, IDC_CI_CHK_ALSO_FL);
+				isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL));
+				if (isEN && isCHK && pobjCI->mapFL.count(ws_id_name)) {
+					alsoDownload[L"FL"][L"URL"] = pobjCI->mapFL[ws_id_name];
+					alsoDownload[L"FL"][L"PATH"] = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
+					extraWritable[L"FL"] = pobjCI->isFunctionListDirWritable();
+				}
 			}
 			else if (wsCategory == L"AutoCompletion") {
 				if (pobjCI->mapAC.count(ws_id_name)) {
@@ -220,6 +254,26 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
 				::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
 			}
+
+			// also download AC and FL, if applicable
+			std::vector<std::wstring> xtra = { L"AC", L"FL" };
+			for (auto category : xtra) {
+				if (alsoDownload.count(category)) {
+					std::wstring xURL = alsoDownload[category][L"URL"];
+					std::wstring xPATH = alsoDownload[category][L"PATH"];
+					if (extraWritable[category]) {
+						pobjCI->downloadFileToDisk(xURL, xPATH);
+					}
+					else {
+						// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
+						std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
+						pobjCI->downloadFileToDisk(xURL, tmpPath);
+						std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + xPATH;
+						std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + xPATH + L"\"";
+						ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+					}
+				}
+			}
 		}
 		return true;
 		default:
@@ -229,14 +283,40 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 	{
 		if ((wParam == IDC_CI_TABCTRL) && (((LPNMHDR)lParam)->code == TCN_SELCHANGE)) {
 			std::wstring wsCategory = _get_tab_category_wstr(hwndDlg, IDC_CI_TABCTRL);
-			if (wsCategory == L"UDL")
+			if (wsCategory == L"UDL") {
 				_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
-			else if (wsCategory == L"AutoCompletion")
+				// disable options
+				HWND hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC);
+				EnableWindow(hwCHK, FALSE);
+				ShowWindow(hwCHK, SW_SHOW);
+				hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
+				EnableWindow(hwCHK, FALSE);
+				ShowWindow(hwCHK, SW_SHOW);
+			}
+			else if (wsCategory == L"AutoCompletion") {
 				_populate_file_cbx(hwndDlg, pobjCI->mapAC, pobjCI->mapDISPLAY);
-			else if (wsCategory == L"FunctionList")
+				// disable options
+				HWND hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC);
+				ShowWindow(hwCHK, SW_HIDE);
+				hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
+				ShowWindow(hwCHK, SW_HIDE);
+			}
+			else if (wsCategory == L"FunctionList") {
 				_populate_file_cbx(hwndDlg, pobjCI->mapFL, pobjCI->mapDISPLAY);
-			else if (wsCategory == L"Theme")
+				// disable options
+				HWND hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC);
+				ShowWindow(hwCHK, SW_HIDE);
+				hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
+				ShowWindow(hwCHK, SW_HIDE);
+			}
+			else if (wsCategory == L"Theme") {
 				_populate_file_cbx(hwndDlg, pobjCI->vThemeFiles);
+				// disable options
+				HWND hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC);
+				ShowWindow(hwCHK, SW_HIDE);
+				hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
+				ShowWindow(hwCHK, SW_HIDE);
+			}
 			return true;
 		}
 	}
