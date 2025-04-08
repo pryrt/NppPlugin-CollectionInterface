@@ -23,3 +23,4 @@
 #include "resource.h"
 
 INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);

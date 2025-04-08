@@ -66,11 +66,11 @@ void commandMenuInit()
     //            ShortcutKey *shortcut,          // optional. Define a shortcut to trigger this command
     //            bool check0nInit                // optional. Make this menu item be checked visually
     //            );
-    setCommand(0, TEXT("Collection Interface"), showCollectionInterface, NULL, false);
-    setCommand(1, TEXT(""), NULL, NULL, false);
-    setCommand(2, TEXT("About (NonModal)"), showAbout, NULL, false);
-    setCommand(3, TEXT("About (Modal)"), showAboutModal, NULL, false);
-    //setCommand(4, TEXT(""), NULL, NULL, false);
+    setCommand(0, TEXT("Collection Interface: Download"), showCollectionInterface, NULL, false);
+    setCommand(1, TEXT("Help: Download"), showCIDownloadHelp, NULL, false);
+    setCommand(2, TEXT(""), NULL, NULL, false);
+    //setCommand(3, TEXT("About (NonModal)"), showAbout, NULL, false);
+    setCommand(3, TEXT("About"), showAboutModal, NULL, false);
     //setCommand(5, TEXT("Hello Notepad++"), hello, NULL, false);
     //setCommand(6, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
 }
@@ -130,19 +130,27 @@ void helloDlg()
 
 void showAbout()
 {
+    // non-modal allows to still interact with the parent
     CreateDialogParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_ABOUTDLG), nppData._nppHandle, (DLGPROC)abtDlgProc, (LPARAM)NULL);
 }
 
 void showAboutModal()
 {
+    // modal freezes the parent
     DialogBoxParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_ABOUTDLG), nppData._nppHandle, (DLGPROC)abtDlgProc, (LPARAM)NULL);
     return;
 }
 
 void showCollectionInterface()
 {
+    // modal freezes the parent
     DialogBoxParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_COLLECTIONINTERFACEDLG), nppData._nppHandle, (DLGPROC)ciDlgProc, (LPARAM)NULL);
     return;
 }
 
-
+void showCIDownloadHelp()
+{
+    // modal freezes the parent
+    DialogBoxParam((HINSTANCE)_hModule, MAKEINTRESOURCE(IDD_CI_DOWNLOADHELPDLG), nppData._nppHandle, (DLGPROC)cidlHelpDlgProc, (LPARAM)NULL);
+    return;
+}

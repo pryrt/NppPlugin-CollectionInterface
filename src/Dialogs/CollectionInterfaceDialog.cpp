@@ -275,7 +275,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			}
 
 			// update progress bar
-			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100*count/total, 0);
+			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
 
 			// also download AC and FL, if applicable
 			std::vector<std::wstring> xtra = { L"AC", L"FL" };
@@ -311,6 +311,11 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 			// Final update of progress bar: 100%
 			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
+		}
+		return true;
+		case IDC_CI_HELPBTN:
+		{
+			showCIDownloadHelp();
 		}
 		return true;
 		default:
@@ -408,4 +413,100 @@ std::wstring _get_tab_category_wstr(HWND hwndDlg, int idcTabCtrl)
 		}
 	}
 	return L"";
+}
+
+
+
+INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	static std::wstring wsHelpText(L"");
+	if (wsHelpText == L"") {
+		wsHelpText += L"Pick the category's tab: UDL, AutoCompletion, FunctionList, or Theme\r\n\r\n";
+		wsHelpText += L"It will populate the list with the names for each of the files; you can select one from that list (using the scrollbar as needed).\r\n\r\n";
+		wsHelpText += L"Since User Defined Language (UDL) definitions can have associated AutoCompletion or FunctionList definitions, if one or both of those types of file are associated with the UDL you have selected, you will be able to choose, using the appropriate checkbox, whether to also download the associated AutoCompletion and/or FunctionList at the same time.  If you are in the AutoCompletion or FunctionList tabs, it is assumed that you _just_ want to download that specific file, not the associated UDL.\r\n\r\n";
+		wsHelpText += L"Themes are independent of the UDL and associated files, so you just select the theme you want to download.\r\n\r\n";
+		wsHelpText += L"Click DOWNLOAD to start the download of the selected file (and optionally, any associated files that were chosen).\r\n\r\n";
+		wsHelpText += L"If you do not have permission to write in the necessary directory for a given file, a MessageBox will inform you of this, and if you do not CANCEL that file, Windows will ask for elevated UAC permission. (It will ask once per file that needs the extra permission.)\r\n\r\n";
+		wsHelpText += L"You will need to restart Notepad++ to be able to see the new file(s) be available to Notepad++.  If you downloaded at least one file, the CollectionInterface Download will ask if you want it to restart Notepad++ for you.";
+	}
+
+	switch (uMsg) {
+	case WM_INITDIALOG:
+	{
+		// Find Center and then position the window:
+
+		// find App center
+		RECT rc;
+		HWND hParent = GetParent(hwndDlg);
+		::GetClientRect(hParent, &rc);
+		POINT center;
+		int w = rc.right - rc.left;
+		int h = rc.bottom - rc.top;
+		center.x = rc.left + w / 2;
+		center.y = rc.top + h / 2;
+		::ClientToScreen(hParent, &center);
+		rc.left -= static_cast<int>(lParam);
+		rc.left -= static_cast<int>(wParam);
+		rc.left += static_cast<int>(lParam);
+		rc.left += static_cast<int>(wParam);
+
+		// and position dialog
+		RECT dlgRect;
+		::GetClientRect(hwndDlg, &dlgRect);
+		int x = center.x - (dlgRect.right - dlgRect.left) / 2;
+		int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
+		::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
+
+		// populate with help text:
+		HWND hEdit = ::GetDlgItem(hwndDlg, IDC_CIDH_BIGTEXT);
+		::SetWindowText(hEdit, wsHelpText.c_str());
+		//::SendMessage(hEdit, EM_SETREADONLY, static_cast<WPARAM>(false), 0);
+		//::SendMessage(hEdit, WM_CLEAR, 0, 0);
+		//::SendMessage(hEdit, EM_SETSEL, static_cast<WPARAM>(-1), static_cast<LPARAM>(-1));
+		//::SendMessage(hEdit, EM_SETREADONLY, static_cast<WPARAM>(true), 0);
+		//::SendMessage(hwndDlg, WM_SIZE, static_cast<WPARAM>(dlgRect.right - dlgRect.left), static_cast<LPARAM>(dlgRect.bottom - dlgRect.top));
+
+	}
+
+	return true;
+	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		case IDCANCEL:
+		case IDOK:
+			EndDialog(hwndDlg, 0);
+			DestroyWindow(hwndDlg);
+			return true;
+		}
+		return false;
+	case WM_CLOSE:
+		EndDialog(hwndDlg, 0);
+		DestroyWindow(hwndDlg);
+		return true;
+	case WM_SIZE:
+	{
+		//// int newWidth = LOWORD(lParam);
+		//// int newHeight = HIWORD(lParam);
+		//// 
+		//// // Resize the edit control, adjust position and size as needed
+		//// HWND hEdit = ::GetDlgItem(hwndDlg, IDC_CIDH_BIGTEXT);
+		//// SetWindowPos(
+		//// 	hEdit,
+		//// 	nullptr,
+		//// 	10, // X position
+		//// 	10, // Y position
+		//// 	newWidth - 20, // Width
+		//// 	newHeight - 20, // Height
+		//// 	SWP_NOZORDER
+		//// );
+		//// //::SendMessage(hEdit, EM_SETREADONLY, static_cast<WPARAM>(false), 0);
+		//// //::SetWindowText(hEdit, L"Hello World");
+		//// //::SendMessage(hEdit, EM_SETSEL, 0, 0);
+		//// ::SetWindowText(hEdit, wsHelpText.c_str());
+		//// //::SendMessage(hEdit, EM_SETREADONLY, static_cast<WPARAM>(true), 0);
+		return true;
+	}
+	default:
+		return false;
+	}
 }

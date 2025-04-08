@@ -77,5 +77,6 @@ void helloDlg();
 void showAbout();
 void showAboutModal();
 void showCollectionInterface();
+void showCIDownloadHelp();
 
 #endif //PLUGINDEFINITION_H
