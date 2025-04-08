@@ -115,6 +115,8 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					EnableWindow(hwCHK, static_cast<BOOL>(pobjCI->mapFL.count(ws_id_name)));
 
 				}
+				// reset progress bar
+				::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
 			}
 			return true;
 		case IDC_CI_BTN_RESTART:
@@ -184,6 +186,10 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			std::wstring wsFilename(needFileLen, 0);
 			::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
 
+			// update progress bar
+			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+
+			int total = 1;
 			std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
 			std::wstring wsURL = L"";
 			std::wstring wsPath = L"";
@@ -205,6 +211,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					alsoDownload[L"AC"][L"URL"] = pobjCI->mapAC[ws_id_name];
 					alsoDownload[L"AC"][L"PATH"] = pobjCI->nppCfgAutoCompletionDir() + L"\\" + ws_id_name + L".xml";
 					extraWritable[L"AC"] = pobjCI->isAutoCompletionDirWritable();
+					total++;
 				}
 
 				// if cjkFL, then also download FL
@@ -214,6 +221,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					alsoDownload[L"FL"][L"URL"] = pobjCI->mapFL[ws_id_name];
 					alsoDownload[L"FL"][L"PATH"] = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
 					extraWritable[L"FL"] = pobjCI->isFunctionListDirWritable();
+					total++;
 				}
 			}
 			else if (wsCategory == L"AutoCompletion") {
@@ -239,11 +247,13 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				isWritable = pobjCI->isThemesDirWritable();
 			}
 
+			int count = 0;
 			if (isWritable) {
 				// download directly to the final destination
 				pobjCI->downloadFileToDisk(wsURL, wsPath);
 				std::wstring msg = L"Downloaded to " + wsPath;
-				::MessageBox(hwndDlg, msg.c_str(), L"Download Successful", MB_OK);
+				//::MessageBox(hwndDlg, msg.c_str(), L"Download Successful", MB_OK);
+				count++;
 			}
 			else {
 				// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
@@ -256,9 +266,16 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + wsPath;
 					std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + wsPath + L"\"";
 					ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
-					::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
+					//::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
+					count++;
+				}
+				else {
+					total--;
 				}
 			}
+
+			// update progress bar
+			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100*count/total, 0);
 
 			// also download AC and FL, if applicable
 			std::vector<std::wstring> xtra = { L"AC", L"FL" };
@@ -268,6 +285,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					std::wstring xPath = alsoDownload[category][L"PATH"];
 					if (extraWritable[category]) {
 						pobjCI->downloadFileToDisk(xURL, xPath);
+						count++;
 					}
 					else {
 						// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
@@ -280,10 +298,19 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 							std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + xPath;
 							std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + xPath + L"\"";
 							ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+							count++;
+						}
+						else {
+							total--;
 						}
 					}
 				}
+				// update progress bar
+				::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
 			}
+
+			// Final update of progress bar: 100%
+			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
 		}
 		return true;
 		default:
@@ -327,6 +354,10 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
 				ShowWindow(hwCHK, SW_HIDE);
 			}
+			// reset progress bar
+			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+
+			// done with SELCHANGE
 			return true;
 		}
 	}
