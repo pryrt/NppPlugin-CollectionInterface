@@ -62,6 +62,6 @@ jobs:
         if((Test-Path -Path arm64\CollectionInterface.dll)) {
             Copy-Item -Path arm64\CollectionInterface.dll -Destination .\CollectionInterface.dll
         }
-        $zipName = "CollectionInterface_" + ${{ matrix.build_platform }} + ".zip"
+        $zipName = "CollectionInterface_${{ matrix.build_platform }}.zip"
         $filesToZip = "CollectionInterface.dll", ".\docs\"
         Compress-Archive -Path $filesToZip -Destination -$zipName
