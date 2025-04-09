@@ -64,12 +64,12 @@ jobs:
         }
         $zipName = "CollectionInterface_${{ matrix.build_platform }}.zip"
         $filesToZip = "CollectionInterface.dll", ".\docs\"
-        Compress-Archive -Path $filesToZip -Destination -$zipName
+        Compress-Archive -Path $filesToZip -Destination CollectionInterface.zip
     - name: 🎉 Store ${{ matrix.build_platform }} zipfile as asset
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./CollectionInterface*.zip
+        file: ./CollectionInterface.zip
         tag: ${{ github.ref }}
         overwrite: true
         body: ${{ github.event.release.body }}
