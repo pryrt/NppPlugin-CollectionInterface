@@ -437,7 +437,7 @@ INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 		wsHelpText += L"Themes are independent of the UDL and associated files, so you just select the theme you want to download.\r\n\r\n";
 		wsHelpText += L"Click DOWNLOAD to start the download of the selected file (and optionally, any associated files that were chosen).\r\n\r\n";
 		wsHelpText += L"If you do not have permission to write in the necessary directory for a given file, a MessageBox will inform you of this, and if you do not CANCEL that file, Windows will ask for elevated UAC permission. (It will ask once per file that needs the extra permission.)\r\n\r\n";
-		wsHelpText += L"You will need to restart Notepad++ to be able to see the new file(s) be available to Notepad++.  If you downloaded at least one file, the CollectionInterface Download will ask if you want it to restart Notepad++ for you.";
+		wsHelpText += L"You will need to restart Notepad++ for the new file(s) to be available for use in Notepad++.  If you downloaded at least one file, the CollectionInterface Download will ask if you want it to restart Notepad++ for you.";
 	}
 
 	switch (uMsg) {
