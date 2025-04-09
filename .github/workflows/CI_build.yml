@@ -44,8 +44,24 @@ jobs:
           name: plugin_dll_arm64
           path: arm64\CollectionInterface.dll
 
-    - name: This Step Only On Release Tags
+    - name: Create Release Zipfile for ${{ matrix.build_platform }}
       if: startsWith(github.ref, 'refs/tags/v') && matrix.build_configuration == 'Release'
       working-directory: .
       run: |
-        echo This only runs on a tag, I hope
+        echo "This only runs on a tag, I hope"
+        if(!(Test-Path -Path .\docs)) {
+            New-Item -ItemType Directory -Path .\docs
+        }
+        Copy-Item -Path README.md -Destination .\docs\
+        if((Test-Path -Path bin64\CollectionInterface.dll)) {
+            Copy-Item -Path bin64\CollectionInterface.dll -Destination .\CollectionInterface.dll
+        }
+        if((Test-Path -Path bin\CollectionInterface.dll)) {
+            Copy-Item -Path bin\CollectionInterface.dll -Destination .\CollectionInterface.dll
+        }
+        if((Test-Path -Path arm64\CollectionInterface.dll)) {
+            Copy-Item -Path arm64\CollectionInterface.dll -Destination .\CollectionInterface.dll
+        }
+        $zipName = "CollectionInterface_" + ${{ matrix.build_platform }} + ".zip"
+        $filesToZip = "CollectionInterface.dll", ".\docs\"
+        Compress-Archive -Path $filesToZip -Destination -$zipName
