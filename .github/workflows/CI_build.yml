@@ -43,3 +43,36 @@ jobs:
       with:
           name: plugin_dll_arm64
           path: arm64\CollectionInterface.dll
+
+    - name: Create ${{ matrix.build_platform }} Release zipfile
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.build_configuration == 'Release'
+      working-directory: .
+      run: |
+        echo "This only runs on a tag, I hope"
+        if(!(Test-Path -Path .\docs)) {
+            New-Item -ItemType Directory -Path .\docs
+        }
+        Copy-Item -Path README.md -Destination .\docs\
+        if((Test-Path -Path bin64\CollectionInterface.dll)) {
+            Copy-Item -Path bin64\CollectionInterface.dll -Destination .\CollectionInterface.dll
+        }
+        if((Test-Path -Path bin\CollectionInterface.dll)) {
+            Copy-Item -Path bin\CollectionInterface.dll -Destination .\CollectionInterface.dll
+        }
+        if((Test-Path -Path arm64\CollectionInterface.dll)) {
+            Copy-Item -Path arm64\CollectionInterface.dll -Destination .\CollectionInterface.dll
+        }
+        $zipName = "CollectionInterface_${{ matrix.build_platform }}.zip"
+        $filesToZip = "CollectionInterface.dll", ".\docs\"
+        Compress-Archive -Path $filesToZip -Destination $zipName
+        dir
+    - name: 🎉 Store ${{ matrix.build_platform }} zipfile as asset
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.build_configuration == 'Release'
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./CollectionInterface_${{ matrix.build_platform }}.zip
+        asset_name: CollectionInterface_${{ matrix.build_platform }}.zip
+        tag: ${{ github.ref }}
+        overwrite: true
+        body: ${{ github.event.release.body }}
