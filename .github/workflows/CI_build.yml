@@ -44,8 +44,8 @@ jobs:
           name: plugin_dll_arm64
           path: arm64\CollectionInterface.dll
 
-    - name: This Step Only On Tags
-      if: startsWith(github.ref, 'refs/tags/v')
+    - name: This Step Only On Release Tags
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.build_configuration == 'Release'
       working-directory: .
       run: |
         echo This only runs on a tag, I hope
