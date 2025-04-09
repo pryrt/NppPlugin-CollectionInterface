@@ -44,7 +44,7 @@ jobs:
           name: plugin_dll_arm64
           path: arm64\CollectionInterface.dll
 
-    - name: Create Release Zipfile for ${{ matrix.build_platform }}
+    - name: Create ${{ matrix.build_platform }} Release Zipfile
       if: startsWith(github.ref, 'refs/tags/v') && matrix.build_configuration == 'Release'
       working-directory: .
       run: |
@@ -65,3 +65,11 @@ jobs:
         $zipName = "CollectionInterface_${{ matrix.build_platform }}.zip"
         $filesToZip = "CollectionInterface.dll", ".\docs\"
         Compress-Archive -Path $filesToZip -Destination -$zipName
+    - name: 🎉 Store ${{ matrix.build_platform }} Zipfile as asset
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./CollectionInterface*.zip
+        tag: ${{ github.ref }}
+        overwrite: true
+        body: ${{ github.event.release.body }}
