@@ -224,7 +224,6 @@ void CollectionInterface::getListsFromJson(void)
 	////////////////////////////////
 	// Process Theme JSON
 	////////////////////////////////
-	// TODO:
 	std::vector<char> vcThemeJSON = downloadFileInMemory(L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/master/themes/.toc.json");
 	nlohmann::json jTheme = nlohmann::json::parse(vcThemeJSON);
 	std::string v = jTheme.at(0).get<std::string>();
