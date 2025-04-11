@@ -215,7 +215,9 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				bool isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC));
 				if (isEN && isCHK && pobjCI->mapAC.count(ws_id_name)) {
 					alsoDownload[L"AC"][L"URL"] = pobjCI->mapAC[ws_id_name];
-					alsoDownload[L"AC"][L"PATH"] = pobjCI->nppCfgAutoCompletionDir() + L"\\" + ws_id_name + L".xml";
+					size_t posLastSlash = alsoDownload[L"AC"][L"URL"].rfind(L'/');
+					std::wstring acName = (posLastSlash == std::wstring::npos) ? (ws_id_name + L".xml") : (alsoDownload[L"AC"][L"URL"].substr(posLastSlash+1));
+					alsoDownload[L"AC"][L"PATH"] = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
 					extraWritable[L"AC"] = pobjCI->isAutoCompletionDirWritable();
 					total++;
 				}
@@ -231,11 +233,17 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 			}
 			else if (wsCategory == L"AutoCompletion") {
+				size_t posLastSlash = std::wstring::npos;
+				std::wstring acName = ws_id_name + L".xml";
 				if (pobjCI->mapAC.count(ws_id_name)) {
 					wsURL = pobjCI->mapAC[ws_id_name];
+					posLastSlash = wsURL.rfind(L'/');
+					if (posLastSlash != std::wstring::npos) {
+						acName = wsURL.substr(posLastSlash+1);
+					}
 				}
 
-				wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + ws_id_name + L".xml";
+				wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
 				isWritable = pobjCI->isAutoCompletionDirWritable();
 			}
 			else if (wsCategory == L"FunctionList") {
