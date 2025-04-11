@@ -86,6 +86,22 @@ std::vector<char> CollectionInterface::downloadFileInMemory(const std::wstring& 
 
 bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std::wstring& path)
 {
+	// first expand any variables in the the path
+	DWORD dwExSize = 2 * static_cast<DWORD>(path.size());
+	std::wstring expandedPath(dwExSize, L'\0');
+	if (!ExpandEnvironmentStrings(path.c_str(), const_cast<LPWSTR>(expandedPath.data()), dwExSize)) {
+		std::wstring errmsg = L"Could not understand the path \"" + path + L"\": " + std::to_wstring(GetLastError()) + L"\n";
+		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		return false;
+	}
+	_wsDeleteTrailingNulls(expandedPath);
+
+	// don't download and overwrite the file if it already exists
+	if (!ask_overwrite_if_exists(expandedPath)) {
+		return false;
+	}
+
+	// now that I know it's safe to write the file, try opening the internet connection
 	HINTERNET hInternet = InternetOpen(L"CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL) {
 		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
@@ -97,17 +113,9 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 	if (hConnect == NULL) {
 		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
 		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		if (hInternet) InternetCloseHandle(hInternet);	// need to free hInternet if hConnect failed
 		return false;
 	}
-
-	DWORD dwExSize = 2 * static_cast<DWORD>(path.size());
-	std::wstring expandedPath(dwExSize, L'\0');
-	if (!ExpandEnvironmentStrings(path.c_str(), const_cast<LPWSTR>(expandedPath.data()), dwExSize)) {
-		std::wstring errmsg = L"Could not understand the path \"" + path + L"\": " + std::to_wstring(GetLastError()) + L"\n";
-		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
-		return false;
-	}
-	_wsDeleteTrailingNulls(expandedPath);
 
 	HANDLE hFile = CreateFile(expandedPath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
@@ -125,6 +133,10 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 
 		std::wstring errmsg = L"Could not create the file \"" + expandedPath + L"\": " + std::to_wstring(GetLastError()) + L" => " + messageBuffer + L"\n";
 		::MessageBox(NULL, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+
+		// need to free hInternet, hConnect, and messageBuffer
+		if (hConnect) InternetCloseHandle(hConnect);
+		if (hConnect) InternetCloseHandle(hConnect);
 		LocalFree(messageBuffer);
 		return false;
 	}
@@ -136,6 +148,10 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 		if (!stat) {
 			std::wstring errmsg = L"Error reading from URL\"" + url + L"\": " + std::to_wstring(GetLastError()) + L"\n";
 			::MessageBox(NULL, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+			// free handles before returning
+			if (hConnect) InternetCloseHandle(hConnect);
+			if (hInternet) InternetCloseHandle(hInternet);
+			if (hFile) CloseHandle(hFile);
 			return false;
 		}
 
@@ -148,6 +164,10 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 		if (!stat) {
 			std::wstring errmsg = L"Error writing to \"" + expandedPath + L"\": " + std::to_wstring(GetLastError()) + L"\n";
 			::MessageBox(NULL, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+			// free handles before returning
+			if (hConnect) InternetCloseHandle(hConnect);
+			if (hInternet) InternetCloseHandle(hInternet);
+			if (hFile) CloseHandle(hFile);
 			return false;
 		}
 	}
@@ -390,4 +410,13 @@ std::wstring CollectionInterface::getWritableTempDir(void)
 		return L"";
 	}
 	return tempDir;
+}
+
+#include <Shlwapi.h>
+bool CollectionInterface::ask_overwrite_if_exists(const std::wstring& path)
+{
+	if (!PathFileExists(path.c_str())) return true;	// if file doesn't exist, it's okay to "overwrite" nothing ;-)
+	std::wstring msg = L"The path\r\n" + path + L"\r\nalready exists.  Should I overwrite it?";
+	int ans = ::MessageBox(_hwndNPP, msg.c_str(), L"Overwrite File?", MB_YESNO);
+	return ans==IDYES;
 }

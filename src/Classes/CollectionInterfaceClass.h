@@ -51,6 +51,9 @@ public:
 	//	as a TempDir, and then will need to use runas to copy from the TempDir to the real dir.
 	std::wstring getWritableTempDir(void);
 
+	// tests if it exists, and if so, ask if you want to overwrite or not
+	bool ask_overwrite_if_exists(const std::wstring& path);
+
 private:
 	std::string _xml_unentity(const std::string& text);
 	std::wstring& _wsDeleteTrailingNulls(std::wstring& text);
