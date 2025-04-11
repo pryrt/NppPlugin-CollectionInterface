@@ -3,16 +3,6 @@
 #include "json.hpp"
 
 
-class wruntime_error : public std::runtime_error {
-public:
-	wruntime_error(const std::wstring& msg) : runtime_error("Error!"), message(msg) {};
-
-	std::wstring get_message() { return message; }
-
-private:
-	std::wstring message;
-};
-
 CollectionInterface::CollectionInterface(HWND hwndNpp) {
 	_hwndNPP = hwndNpp;
 	_populateNppDirs();
@@ -68,13 +58,16 @@ std::vector<char> CollectionInterface::downloadFileInMemory(const std::wstring& 
 {
 	HINTERNET hInternet = InternetOpen(L"CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL) {
-		throw std::runtime_error("InternetOpen failed");
+		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
+		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		return std::vector<char>();
 	}
 
 	HINTERNET hConnect = InternetOpenUrl(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
 	if (hConnect == NULL) {
-		std::string errmsg = "InternetOpenUrl failed: " + std::to_string(GetLastError()) + "\n";
-		throw std::runtime_error(errmsg.c_str());
+		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
+		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		return std::vector<char>();
 	}
 
 	std::vector<char> buffer(4096);
@@ -95,20 +88,24 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 {
 	HINTERNET hInternet = InternetOpen(L"CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL) {
-		throw wruntime_error(L"InternetOpen failed");
+		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
+		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		return false;
 	}
 
 	HINTERNET hConnect = InternetOpenUrl(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
 	if (hConnect == NULL) {
-		std::string errmsg = "InternetOpenUrl failed: " + std::to_string(GetLastError()) + "\n";
-		throw std::runtime_error(errmsg.c_str());
+		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
+		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		return false;
 	}
 
 	DWORD dwExSize = 2 * static_cast<DWORD>(path.size());
 	std::wstring expandedPath(dwExSize, L'\0');
 	if (!ExpandEnvironmentStrings(path.c_str(), const_cast<LPWSTR>(expandedPath.data()), dwExSize)) {
-		std::wstring errmsg = L"ExpandEnvirontmentStrings(" + path + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
-		throw wruntime_error(errmsg.c_str());
+		std::wstring errmsg = L"Could not understand the path \"" + path + L"\": " + std::to_wstring(GetLastError()) + L"\n";
+		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		return false;
 	}
 	_wsDeleteTrailingNulls(expandedPath);
 
@@ -126,12 +123,10 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 			NULL
 		);
 
-		std::wstring errmsg = L"CreateFile(" + expandedPath + L") failed: " + std::to_wstring(GetLastError()) + L" => " + messageBuffer + L"\n";
-		::MessageBox(NULL, errmsg.c_str(), L"Command Error", MB_ICONERROR);
-
+		std::wstring errmsg = L"Could not create the file \"" + expandedPath + L"\": " + std::to_wstring(GetLastError()) + L" => " + messageBuffer + L"\n";
+		::MessageBox(NULL, errmsg.c_str(), L"Download Error", MB_ICONERROR);
 		LocalFree(messageBuffer);
-
-		throw wruntime_error(errmsg.c_str());
+		return false;
 	}
 
 	std::vector<char> buffer(4096);
@@ -139,8 +134,9 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 		// read a chunk from the webfile
 		BOOL stat = InternetReadFile(hConnect, buffer.data(), static_cast<DWORD>(buffer.size()), &dwBytesRd);
 		if (!stat) {
-			std::wstring errmsg = L"InternetReadFile(" + url + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
-			throw wruntime_error(errmsg.c_str());
+			std::wstring errmsg = L"Error reading from URL\"" + url + L"\": " + std::to_wstring(GetLastError()) + L"\n";
+			::MessageBox(NULL, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+			return false;
 		}
 
 		// don't need to write if no bytes were read (ie, EOF)
@@ -150,8 +146,9 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 		DWORD dwBytesWr = 0;
 		stat = WriteFile(hFile, buffer.data(), dwBytesRd, &dwBytesWr, NULL);
 		if (!stat) {
-			std::wstring errmsg = L"WriteFile(" + expandedPath + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
-			throw wruntime_error(errmsg.c_str());
+			std::wstring errmsg = L"Error writing to \"" + expandedPath + L"\": " + std::to_wstring(GetLastError()) + L"\n";
+			::MessageBox(NULL, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+			return false;
 		}
 	}
 
@@ -230,7 +227,6 @@ void CollectionInterface::getListsFromJson(void)
 	for (const auto& item : jTheme.items()) {
 		std::wstring ws = string2wstring(item.value().get<std::string>());
 		vThemeFiles.push_back(ws.c_str());
-		//!!	::MessageBoxA(NULL, item.value().get<std::string>().c_str(), "IterateThemes", MB_OK);
 	}
 
 	////////////////////////////////
@@ -342,8 +338,8 @@ bool CollectionInterface::_is_dir_writable(const std::wstring& path)
 	if (hFile == INVALID_HANDLE_VALUE) {
 		DWORD errNum = GetLastError();
 		if (errNum != ERROR_ACCESS_DENIED) {
-			std::wstring errmsg = L"_is_dir_writable::CreateFile[tmp](" + tmpFileName + L") failed: " + std::to_wstring(GetLastError()) + L"\n";
-			throw wruntime_error(errmsg.c_str());
+			std::wstring errmsg = L"Error when testing if \"" + path + L"\" is writeable: " + std::to_wstring(GetLastError()) + L"\n";
+			::MessageBox(NULL, errmsg.c_str(), L"Directory error", MB_ICONERROR);
 		}
 		return false;
 	}
@@ -374,7 +370,8 @@ std::wstring CollectionInterface::getWritableTempDir(void)
 		tempDir.resize(MAX_PATH + 1);
 		if (!ExpandEnvironmentStrings(L"%USERPROFILE%", const_cast<LPWSTR>(tempDir.data()), MAX_PATH + 1)) {
 			std::wstring errmsg = L"getWritableTempDir::ExpandEnvirontmentStrings(%USERPROFILE%) failed: " + std::to_wstring(GetLastError()) + L"\n";
-			throw wruntime_error(errmsg.c_str());
+			::MessageBox(NULL, errmsg.c_str(), L"Directory Error", MB_ICONERROR);
+			return L"";
 		}
 		_wsDeleteTrailingNulls(tempDir);
 	}
@@ -389,7 +386,8 @@ std::wstring CollectionInterface::getWritableTempDir(void)
 	// if that fails, no other ideas
 	if (!_is_dir_writable(tempDir)) {
 		std::wstring errmsg = L"getWritableTempDir() cannot find any writable directory; please make sure %TEMP% is defined and writable\n";
-		throw wruntime_error(errmsg.c_str());
+		::MessageBox(NULL, errmsg.c_str(), L"Directory Error", MB_ICONERROR);
+		return L"";
 	}
 	return tempDir;
 }
