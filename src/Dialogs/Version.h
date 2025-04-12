@@ -23,9 +23,9 @@
 #define VERSION_STRING			"1.0.0"
 //								// VERSION_TEXT This must match the tag pushed on the server minus the "v"
 #define VERSION_TEXT			TEXT(VERSION_STRING)
-#define VERSION_STAGE_WS		L"-RC1"
+#define VERSION_STAGE_WS		L""
 //								// VERSION_STAGE				// "-alpha", "-beta", ""
 #define VERSION_STAGE			TEXT("")
-#define VERSION_FULLNAME		"CollectionInterface v1.0.0-RC1"
+#define VERSION_FULLNAME		"CollectionInterface v1.0.0"
 #define VERSION_AUTHOR			"Peter Jones <pryrtcode@pryrt.com>"
 #define VERSION_URL				"https://github.com/pryrt/NppPlugin-CollectionInterface/"
