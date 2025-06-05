@@ -38,7 +38,7 @@ INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 		//ConvertStaticToHyperlink(hwndDlg, IDC_README);
 		//Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), TEXT("DoxyIt v") VERSION_TEXT TEXT(" ") VERSION_STAGE TEXT(" ") BITNESS);
 		wchar_t title[256];
-		swprintf_s(title, L"%s v%s%s %s", L"CollectionInterface", VERSION_TEXT, VERSION_STAGE_WS, BITNESS);
+		swprintf_s(title, L"%s v%s%s %s", VERSION_NAME_WS, VERSION_TEXT, VERSION_STAGE_WS, BITNESS);
 		Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), title);
 
 		if (1) {
