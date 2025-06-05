@@ -37,6 +37,7 @@
 #define IDC_CI_CHK_ALSO_FL                      1008
 #define IDC_CI_CHK_ALSO_AC                      1009
 #define IDC_CI_HELPBTN                          1010
+#define IDC_CI_PROGRESSLBL                      1011
 
 // CollectionInterface Download HELP
 #define IDD_CI_DOWNLOADHELPDLG                  103

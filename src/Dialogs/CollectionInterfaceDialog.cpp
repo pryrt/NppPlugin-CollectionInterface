@@ -82,6 +82,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 		// set progress bar
 		::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+		Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"READY");
 
 		pobjCI = new CollectionInterface(hParent);
 		//pobjCI->getListsFromJson();
@@ -176,6 +177,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 				// reset progress bar
 				::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+				Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"READY");
 			}
 			return true;
 		case IDC_CI_BTN_DOWNLOAD:
@@ -194,6 +196,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 			// update progress bar
 			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+			Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"Downloading... 0%");
 
 			int total = 1;
 			std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
@@ -297,6 +300,9 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 			// update progress bar
 			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
+			wchar_t wcDLPCT[256];
+			swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
+			Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
 
 			// also download AC and FL, if applicable
 			std::vector<std::wstring> xtra = { L"AC", L"FL" };
@@ -335,10 +341,14 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 				// update progress bar
 				::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
+				swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
+				Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
 			}
 
 			// Final update of progress bar: 100%
 			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
+			swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
+			Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
 		}
 		return true;
 		case IDC_CI_HELPBTN:
@@ -389,6 +399,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			}
 			// reset progress bar
 			::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+			Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"READY");
 
 			// done with SELCHANGE
 			return true;
