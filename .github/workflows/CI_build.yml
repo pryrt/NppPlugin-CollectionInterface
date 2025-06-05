@@ -62,7 +62,7 @@ jobs:
         if((Test-Path -Path arm64\CollectionInterface.dll)) {
             Copy-Item -Path arm64\CollectionInterface.dll -Destination .\CollectionInterface.dll
         }
-        $zipName = "CollectionInterface_${{ matrix.build_platform }}.zip"
+        $zipName = "CollectionInterface_${{ github.ref_name }}_${{ matrix.build_platform }}.zip"
         $filesToZip = "CollectionInterface.dll", ".\docs\"
         Compress-Archive -Path $filesToZip -Destination $zipName
         dir
@@ -71,8 +71,8 @@ jobs:
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./CollectionInterface_${{ matrix.build_platform }}.zip
-        asset_name: CollectionInterface_${{ matrix.build_platform }}.zip
+        file: ./CollectionInterface_${{ github.ref_name }}_${{ matrix.build_platform }}.zip
+        asset_name: CollectionInterface_${{ github.ref_name }}_${{ matrix.build_platform }}.zip
         tag: ${{ github.ref }}
         overwrite: true
         body: ${{ github.event.release.body }}
