@@ -49,10 +49,11 @@ jobs:
       working-directory: .
       run: |
         echo "This only runs on a tag, I hope"
-        if(!(Test-Path -Path .\docs)) {
-            New-Item -ItemType Directory -Path .\docs
+        if(!(Test-Path -Path .\doc)) {
+            New-Item -ItemType Directory -Path .\doc
         }
-        Copy-Item -Path README.md -Destination .\docs\
+        Copy-Item -Path README.md -Destination .\doc\
+        Copy-Item -Path license.txt -Destination .\doc\
         if((Test-Path -Path bin64\CollectionInterface.dll)) {
             Copy-Item -Path bin64\CollectionInterface.dll -Destination .\CollectionInterface.dll
         }
@@ -63,7 +64,7 @@ jobs:
             Copy-Item -Path arm64\CollectionInterface.dll -Destination .\CollectionInterface.dll
         }
         $zipName = "CollectionInterface_${{ github.ref_name }}_${{ matrix.build_platform }}.zip"
-        $filesToZip = "CollectionInterface.dll", ".\docs\"
+        $filesToZip = "CollectionInterface.dll", ".\doc\"
         Compress-Archive -Path $filesToZip -Destination $zipName
         dir
     - name: 🎉 Store ${{ matrix.build_platform }} zipfile as asset
