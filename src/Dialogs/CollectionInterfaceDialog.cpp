@@ -28,6 +28,7 @@
 #include <vector>
 #include <CommCtrl.h>
 
+HWND g_hwndCIDlg = nullptr;
 CollectionInterface* pobjCI;
 void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList);
 void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring, std::wstring>& mapURLs, std::map<std::wstring, std::wstring>& mapDisplay);
@@ -40,6 +41,9 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 	switch (uMsg) {
 	case WM_INITDIALOG:
 	{
+		// store hwnd
+		g_hwndCIDlg = hwndDlg;
+
 		// Find Center and then position the window:
 
 		// find App center
@@ -87,6 +91,10 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		pobjCI = new CollectionInterface(hParent);
 		//pobjCI->getListsFromJson();
 		_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
+
+		// Follow DarkMode
+		::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIDlg));
+
 	}
 
 	return true;
@@ -155,6 +163,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		case IDCANCEL:
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
+			g_hwndCIDlg = nullptr;
 			delete pobjCI;
 			pobjCI = NULL;
 			return true;
@@ -408,6 +417,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 	return false;
 	case WM_DESTROY:
 		DestroyWindow(hwndDlg);
+		g_hwndCIDlg = nullptr;
 		return true;
 	}
 	return false;

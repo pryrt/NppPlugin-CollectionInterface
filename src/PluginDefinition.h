@@ -90,5 +90,6 @@ extern FuncItem funcItem[nbFunc];
 //
 
 extern HWND g_hwndAboutDlg;
+extern HWND g_hwndCIDlg;
 
 #endif //PLUGINDEFINITION_H
