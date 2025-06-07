@@ -29,11 +29,31 @@
 #define BITNESS TEXT("(32 bit)")
 #endif
 
+HWND g_hwndAboutDlg = nullptr;
+
 #pragma warning(push)
 #pragma warning(disable: 4100)
 INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
 	case WM_INITDIALOG:
+		// follow DarkMode
+		g_hwndAboutDlg = hwndDlg;
+		::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndAboutDlg));
+		if (1) {
+			bool isDM = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
+			if (isDM) {
+				NppDarkMode::Colors myColors = { 0 };
+				if (::SendMessage(nppData._nppHandle, NPPM_GETDARKMODECOLORS, sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(&myColors))) {
+					SetHyperlinkRGB(myColors.linkText);
+				}
+				else {
+					SetHyperlinkRGB(RGB(64, 64, 255));
+				}
+			}
+			else {
+				SetHyperlinkRGB(RGB(0, 0, 192));
+			}
+		}
 		ConvertStaticToHyperlink(hwndDlg, IDC_GITHUB);
 		//ConvertStaticToHyperlink(hwndDlg, IDC_README);
 		//Edit_SetText(GetDlgItem(hwndDlg, IDC_VERSION), TEXT("DoxyIt v") VERSION_TEXT TEXT(" ") VERSION_STAGE TEXT(" ") BITNESS);
@@ -70,15 +90,17 @@ INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 		case IDOK:
 			EndDialog(hwndDlg, 0);
 			DestroyWindow(hwndDlg);
+			g_hwndAboutDlg = nullptr;
 			return true;
-			case IDC_GITHUB:
-				ShellExecute(hwndDlg, TEXT("open"), TEXT(VERSION_URL), NULL, NULL, SW_SHOWNORMAL);
-				return true;
+		case IDC_GITHUB:
+			ShellExecute(hwndDlg, TEXT("open"), TEXT(VERSION_URL), NULL, NULL, SW_SHOWNORMAL);
+			return true;
 			//case IDC_README:
 			//	ShellExecute(hwndDlg, TEXT("open"), TEXT("https://github.com/dail8859/DoxyIt/blob/v") VERSION_TEXT TEXT("/README.md"), NULL, NULL, SW_SHOWNORMAL);
 			//	return true;
 		}
 	case WM_DESTROY:
+		g_hwndAboutDlg = nullptr;
 		DestroyWindow(hwndDlg);
 		return true;
 	}

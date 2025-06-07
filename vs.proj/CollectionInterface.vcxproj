@@ -43,6 +43,7 @@
     <ClInclude Include="..\src\Hyperlinks.h" />
     <ClInclude Include="..\src\menuCmdID.h" />
     <ClInclude Include="..\src\Notepad_plus_msgs.h" />
+    <ClInclude Include="..\src\NPP_DarkMode.h" />
     <ClInclude Include="..\src\PluginDefinition.h" />
     <ClInclude Include="..\src\PluginInterface.h" />
     <ClInclude Include="..\src\Scintilla.h" />

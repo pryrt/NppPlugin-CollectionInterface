@@ -16,6 +16,9 @@
 #define PROP_STATIC_HYPERLINK	TEXT("_Hyperlink_From_Static_")
 #define PROP_UNDERLINE_FONT		TEXT("_Hyperlink_Underline_Font_")
 
+// CollectionInterface wants to be able to change the color of the hyperlink, but default to URL-blue
+COLORREF _hyperlink_rgb = RGB(0, 0, 192);
+COLORREF SetHyperlinkRGB(COLORREF rgbNew) { _hyperlink_rgb = rgbNew; return _hyperlink_rgb; }
 
 LRESULT CALLBACK _HyperlinkParentProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -32,7 +35,7 @@ LRESULT CALLBACK _HyperlinkParentProc(HWND hwnd, UINT message, WPARAM wParam, LP
 		if (fHyperlink)
 		{
 			LRESULT lr = CallWindowProc(pfnOrigProc, hwnd, message, wParam, lParam);
-			SetTextColor(hdc, RGB(0, 0, 192));
+			SetTextColor(hdc, _hyperlink_rgb);	// CollectionInterface plugin: changed this to configurable
 			return lr;
 		}
 
