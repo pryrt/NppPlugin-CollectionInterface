@@ -38,11 +38,26 @@ std::wstring _get_tab_category_wstr(HWND hwndDlg, int idcTabCtrl);
 #pragma warning(disable: 4100)
 INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	static bool didDownload = false;
+	static HBRUSH hBgBrush = nullptr;
+	static COLORREF rgbTextFG = 0, rgbTextBG = 0;
+	static bool isDM = false;
+	static NppDarkMode::Colors myColors = { 0 };
 	switch (uMsg) {
 	case WM_INITDIALOG:
 	{
 		// store hwnd
 		g_hwndCIDlg = hwndDlg;
+
+		// determine dark mode
+		isDM = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
+		if (isDM) {
+			::SendMessage(nppData._nppHandle, NPPM_GETDARKMODECOLORS, sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(&myColors));
+		}
+
+		// TODO: brush based on background
+		rgbTextFG = isDM ? myColors.text : RGB(0, 0, 0);
+		rgbTextBG = isDM ? myColors.background : RGB(240, 240, 240);
+		hBgBrush = CreateSolidBrush(rgbTextBG);
 
 		// Find Center and then position the window:
 
@@ -94,7 +109,6 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 		// Follow DarkMode
 		::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIDlg));
-
 	}
 
 	return true;
@@ -415,9 +429,84 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		}
 	}
 	return false;
+	case WM_CTLCOLORBTN: // fallthru
+	case WM_CTLCOLOREDIT: // fallthru
+	case WM_CTLCOLORDLG: // fallthru
+	case WM_CTLCOLORLISTBOX: // fallthru
+	case WM_CTLCOLORSCROLLBAR: // fallthru
+	case WM_CTLCOLORSTATIC: // fallthru
+	case WM_CTLCOLOR: {
+		int id = GetDlgCtrlID((HWND)lParam);
+		switch (id) {
+		case IDC_CI_TABCTRL: {
+			HDC hdc = (HDC)wParam;
+			SetBkColor(hdc, RGB(255, 0, 0));
+			break;
+		}
+		case IDC_CI_BTN_DOWNLOAD:
+			return false;
+		case IDC_CI_BTN_DONE:
+			return false;
+		case IDC_CI_COMBO_FILE:
+			return false;
+		case IDC_CI_PROGRESSBAR:
+			return false;
+		case IDC_CI_CHK_ALSO_FL:
+			return false;
+		case IDC_CI_CHK_ALSO_AC:
+			return false;
+		case IDC_CI_HELPBTN:
+			return false;
+		case IDC_CI_PROGRESSLBL:
+			return false;
+		default:
+			return false;
+		}
+		return (LRESULT)hBgBrush;
+	}
+	case WM_DRAWITEM: {
+		LPDRAWITEMSTRUCT lpDrawItem = (LPDRAWITEMSTRUCT)lParam;
+		int id = GetDlgCtrlID(lpDrawItem->hwndItem);
+		if (id == IDC_CI_TABCTRL) {
+			if (lpDrawItem->CtlType != ODT_TAB)		// https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-drawitemstruct
+				return false;
+
+
+			// cf: https://www.google.com/search?q=win32+api+c%2B%2B+%22SysTabControl32%22+dark+mode&rlz=1C1QCTP_enUS1147US1147&oq=win32+api+c%2B%2B+%22SysTabControl32%22+dark+mode&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRigATIHCAIQIRigATIHCAMQIRigATIHCAQQIRirAtIBCDcwMDdqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8
+			HDC hdc = lpDrawItem->hDC;
+			RECT rc = lpDrawItem->rcItem;
+			int tabIndex = lpDrawItem->itemID;
+
+			// Draw background
+			//HBRUSH hBrush = CreateSolidBrush(bgColor);
+			//FillRect(hdc, &rc, hBrush);
+			//DeleteObject(hBrush);
+
+			// Draw text
+			SetTextColor(hdc, rgbTextFG);
+			//SetBkMode(hdc, TRANSPARENT);
+			SetBkColor(hdc, rgbTextBG);
+			TCHAR text[256];
+			TCITEM tcItem;
+			tcItem.mask = TCIF_TEXT;
+			tcItem.pszText = text;
+			tcItem.cchTextMax = 256;
+			TabCtrl_GetItem(lpDrawItem->hwndItem, tabIndex, &tcItem);
+			DrawText(hdc, text, -1, &rc, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+
+			//COLORREF customBackColor = RGB(255, 0, 0); // Red background
+			//HBRUSH hBrush = CreateSolidBrush(customBackColor);
+			//FillRect(lpDrawItem->hDC, &lpDrawItem->rcItem, hBrush);
+			//DeleteObject(hBrush);
+			return (LRESULT)hBgBrush;
+		}
+		return false;
+	}
 	case WM_DESTROY:
 		DestroyWindow(hwndDlg);
 		g_hwndCIDlg = nullptr;
+		DeleteObject(hBgBrush);
+		hBgBrush = nullptr;
 		return true;
 	}
 	return false;
