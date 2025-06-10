@@ -36,4 +36,105 @@ namespace NppDarkMode {
 		COLORREF hotEdge = 0;
 		COLORREF disabledEdge = 0;
 	};
+
+	struct Brushes
+	{
+		HBRUSH background = nullptr;
+		HBRUSH ctrlBackground = nullptr;
+		HBRUSH hotBackground = nullptr;
+		HBRUSH dlgBackground = nullptr;
+		HBRUSH errorBackground = nullptr;
+
+		HBRUSH edgeBrush = nullptr;
+		HBRUSH hotEdgeBrush = nullptr;
+		HBRUSH disabledEdgeBrush = nullptr;
+
+		Brushes(const Colors& colors)
+			: background(::CreateSolidBrush(colors.background))
+			, ctrlBackground(::CreateSolidBrush(colors.softerBackground))
+			, hotBackground(::CreateSolidBrush(colors.hotBackground))
+			, dlgBackground(::CreateSolidBrush(colors.pureBackground))
+			, errorBackground(::CreateSolidBrush(colors.errorBackground))
+
+			, edgeBrush(::CreateSolidBrush(colors.edge))
+			, hotEdgeBrush(::CreateSolidBrush(colors.hotEdge))
+			, disabledEdgeBrush(::CreateSolidBrush(colors.disabledEdge))
+		{
+		}
+
+		~Brushes()
+		{
+			::DeleteObject(background);			background = nullptr;
+			::DeleteObject(ctrlBackground);		ctrlBackground = nullptr;
+			::DeleteObject(hotBackground);		hotBackground = nullptr;
+			::DeleteObject(dlgBackground);		dlgBackground = nullptr;
+			::DeleteObject(errorBackground);	errorBackground = nullptr;
+
+			::DeleteObject(edgeBrush);			edgeBrush = nullptr;
+			::DeleteObject(hotEdgeBrush);		hotEdgeBrush = nullptr;
+			::DeleteObject(disabledEdgeBrush);	disabledEdgeBrush = nullptr;
+		}
+
+		void change(const Colors& colors)
+		{
+			::DeleteObject(background);
+			::DeleteObject(ctrlBackground);
+			::DeleteObject(hotBackground);
+			::DeleteObject(dlgBackground);
+			::DeleteObject(errorBackground);
+
+			::DeleteObject(edgeBrush);
+			::DeleteObject(hotEdgeBrush);
+			::DeleteObject(disabledEdgeBrush);
+
+			background = ::CreateSolidBrush(colors.background);
+			ctrlBackground = ::CreateSolidBrush(colors.softerBackground);
+			hotBackground = ::CreateSolidBrush(colors.hotBackground);
+			dlgBackground = ::CreateSolidBrush(colors.pureBackground);
+			errorBackground = ::CreateSolidBrush(colors.errorBackground);
+
+			edgeBrush = ::CreateSolidBrush(colors.edge);
+			hotEdgeBrush = ::CreateSolidBrush(colors.hotEdge);
+			disabledEdgeBrush = ::CreateSolidBrush(colors.disabledEdge);
+		}
+	};
+
+	struct Pens
+	{
+		HPEN darkerTextPen = nullptr;
+		HPEN edgePen = nullptr;
+		HPEN hotEdgePen = nullptr;
+		HPEN disabledEdgePen = nullptr;
+
+		Pens(const Colors& colors)
+			: darkerTextPen(::CreatePen(PS_SOLID, 1, colors.darkerText))
+			, edgePen(::CreatePen(PS_SOLID, 1, colors.edge))
+			, hotEdgePen(::CreatePen(PS_SOLID, 1, colors.hotEdge))
+			, disabledEdgePen(::CreatePen(PS_SOLID, 1, colors.disabledEdge))
+		{
+		}
+
+		~Pens()
+		{
+			::DeleteObject(darkerTextPen);		darkerTextPen = nullptr;
+			::DeleteObject(edgePen);			edgePen = nullptr;
+			::DeleteObject(hotEdgePen);			hotEdgePen = nullptr;
+			::DeleteObject(disabledEdgePen);	disabledEdgePen = nullptr;
+		}
+
+		void change(const Colors& colors)
+		{
+			::DeleteObject(darkerTextPen);
+			::DeleteObject(edgePen);
+			::DeleteObject(hotEdgePen);
+			::DeleteObject(disabledEdgePen);
+
+			darkerTextPen = ::CreatePen(PS_SOLID, 1, colors.darkerText);
+			edgePen = ::CreatePen(PS_SOLID, 1, colors.edge);
+			hotEdgePen = ::CreatePen(PS_SOLID, 1, colors.hotEdge);
+			disabledEdgePen = ::CreatePen(PS_SOLID, 1, colors.disabledEdge);
+		}
+
+	};
+
 }
