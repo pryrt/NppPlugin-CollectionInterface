@@ -62,7 +62,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				myPens.change(myColors);
 
 				// subclass the tab control, because NPPM_DARKMODESUBCLASSANDTHEME doesn't apply to SysTabControl32
-				::SetWindowSubclass(GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL), cbTabSubclass, g_ci_dark_subclass, 0);
+				//::SetWindowSubclass(GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL), cbTabSubclass, g_ci_dark_subclass, 0);
 
 				// For the rest, follow Notpead++ DarkMode settings
 				::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIDlg));
