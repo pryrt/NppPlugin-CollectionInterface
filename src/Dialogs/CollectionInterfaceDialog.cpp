@@ -702,31 +702,9 @@ static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 		case WM_NCDESTROY:
 		{
-			// try not removing the sublcass: //
 			::RemoveWindowSubclass(hWnd, cbTabSubclass, uIdSubclass);
-			//g_ci_dark_subclass = uIdSubclass + 1;	// try moving to next subclass number each time through
 			break;
 		}
-
-#if 0
-		case WM_PARENTNOTIFY:
-		{
-			switch (LOWORD(wParam))
-			{
-				case WM_CREATE:
-				{
-					auto hwndUpdown = reinterpret_cast<HWND>(lParam);
-					if (subclassTabUpDownControl(hwndUpdown))
-					{
-						return 0;
-					}
-					break;
-				}
-			}
-			return 0;
-		}
-#endif
-
 	}
 	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
