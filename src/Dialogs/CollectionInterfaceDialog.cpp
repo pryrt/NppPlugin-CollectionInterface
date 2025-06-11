@@ -37,7 +37,7 @@ std::wstring _get_tab_category_wstr(HWND hwndDlg, int idcTabCtrl);
 
 // for tab control in DarkMode:
 bool g_IsDarkMode = false;
-const int g_ci_dark_subclass = 118;	// Don uses 42 for his DarkMode subclassing; the id+callback must be unique, but I'll use my own "magic number"
+const UINT_PTR g_ci_dark_subclass = 118;	// Don uses 42 for his DarkMode subclassing; the id+callback must be unique, but I'll use my own "magic number"
 static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 NppDarkMode::Colors myColors = { 0 };
 NppDarkMode::Brushes myBrushes(myColors);
@@ -48,16 +48,11 @@ NppDarkMode::Pens myPens(myColors);
 #pragma warning(disable: 4100)
 INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	static bool didDownload = false;
-	static COLORREF rgbTextFG = 0, rgbTextBG = 0;
-	static HWND hwndTab = nullptr;
 	switch (uMsg) {
 		case WM_INITDIALOG:
 		{
 			// store hwnd
 			g_hwndCIDlg = hwndDlg;
-
-			if (!hwndTab)
-				hwndTab = GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL);
 
 			// determine dark mode
 			g_IsDarkMode = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
@@ -66,15 +61,12 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				myBrushes.change(myColors);
 				myPens.change(myColors);
 
-				::SetWindowSubclass(hwndTab, cbTabSubclass, g_ci_dark_subclass, 0);
+				// subclass the tab control, because NPPM_DARKMODESUBCLASSANDTHEME doesn't apply to SysTabControl32
+				::SetWindowSubclass(GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL), cbTabSubclass, g_ci_dark_subclass, 0);
+
+				// For the rest, follow Notpead++ DarkMode settings
+				::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIDlg));
 			}
-
-			// color based on background
-			rgbTextFG = g_IsDarkMode ? myColors.text : RGB(0, 0, 0);
-			rgbTextBG = g_IsDarkMode ? myColors.background : RGB(240, 240, 240);
-
-			// Follow DarkMode
-			::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIDlg));
 
 			// Find Center and then position the window:
 
@@ -125,7 +117,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 
 			// make sure everything is up-to-date
-			::UpdateWindow(hwndTab);
+			//::UpdateWindow(hwndTab);
 			::UpdateWindow(g_hwndCIDlg);
 		}
 
@@ -448,7 +440,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			return false;
 		}
 		case WM_DESTROY:
-			DestroyWindow(hwndTab);
+			//DestroyWindow(hwndTab);
 			DestroyWindow(hwndDlg);
 			g_hwndCIDlg = nullptr;
 			return true;
@@ -593,7 +585,7 @@ INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 	}
 }
 
-static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR /*dwRefData*/)
+static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass , DWORD_PTR /*dwRefData*/)
 {
 	if (!g_IsDarkMode) return false;
 	switch (uMsg)
@@ -710,7 +702,9 @@ static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 		case WM_NCDESTROY:
 		{
+			// try not removing the sublcass: //
 			::RemoveWindowSubclass(hWnd, cbTabSubclass, uIdSubclass);
+			//g_ci_dark_subclass = uIdSubclass + 1;	// try moving to next subclass number each time through
 			break;
 		}
 
