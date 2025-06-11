@@ -29,7 +29,7 @@
 #include <CommCtrl.h>
 
 
-HWND g_hwndCIDlg = nullptr;
+HWND g_hwndCIDlg = nullptr, g_hwndCIHlpDlg = nullptr;
 CollectionInterface* pobjCI;
 void _populate_file_cbx(HWND hwndDlg, std::vector<std::wstring>& vsList);
 void _populate_file_cbx(HWND hwndDlg, std::map<std::wstring, std::wstring>& mapURLs, std::map<std::wstring, std::wstring>& mapDisplay);
@@ -507,6 +507,15 @@ INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg) {
 		case WM_INITDIALOG:
 		{
+			// store hwnd
+			g_hwndCIHlpDlg = hwndDlg;
+
+			// determine dark mode
+			g_IsDarkMode = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
+			if (g_IsDarkMode) {
+				::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIHlpDlg));
+			}
+
 			// Find Center and then position the window:
 
 			// find App center
@@ -705,6 +714,7 @@ static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			::RemoveWindowSubclass(hWnd, cbTabSubclass, uIdSubclass);
 			break;
 		}
+
 	}
 	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
