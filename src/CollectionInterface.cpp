@@ -17,36 +17,31 @@
 
 #include "PluginDefinition.h"
 
-extern FuncItem funcItem[nbFunc];
-extern NppData nppData;
-
-
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID /*lpReserved*/)
 {
 	try {
 
 		switch (reasonForCall)
 		{
-			case DLL_PROCESS_ATTACH:
-				pluginInit(hModule);
-				break;
+		case DLL_PROCESS_ATTACH:
+			pluginInit(hModule);
+			break;
 
-			case DLL_PROCESS_DETACH:
-				pluginCleanUp();
-				break;
+		case DLL_PROCESS_DETACH:
+			pluginCleanUp();
+			break;
 
-			case DLL_THREAD_ATTACH:
-				break;
+		case DLL_THREAD_ATTACH:
+			break;
 
-			case DLL_THREAD_DETACH:
-				break;
+		case DLL_THREAD_DETACH:
+			break;
 		}
 	}
 	catch (...) { return FALSE; }
 
-    return TRUE;
+	return TRUE;
 }
-
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
@@ -54,30 +49,41 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	commandMenuInit();
 }
 
-extern "C" __declspec(dllexport) const TCHAR * getName()
+extern "C" __declspec(dllexport) const TCHAR* getName()
 {
 	return NPP_PLUGIN_NAME;
 }
 
-extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF)
+extern "C" __declspec(dllexport) FuncItem* getFuncsArray(int* nbF)
 {
 	*nbF = nbFunc;
 	return funcItem;
 }
 
 
-extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
+extern "C" __declspec(dllexport) void beNotified(SCNotification* notifyCode)
 {
-	switch (notifyCode->nmhdr.code) 
+	switch (notifyCode->nmhdr.code)
 	{
-		case NPPN_SHUTDOWN:
-		{
-			commandMenuCleanUp();
+	case NPPN_DARKMODECHANGED:
+	{
+		std::vector<HWND> hw_dlgs = { g_hwndAboutDlg, g_hwndCIDlg };
+		for (auto hw : hw_dlgs) {
+			if (hw) {
+				::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfHandleChange), reinterpret_cast<LPARAM>(hw));
+				::SetWindowPos(hw, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED); // to redraw titlebar
+			}
 		}
-		break;
+	}
+	break;
+	case NPPN_SHUTDOWN:
+	{
+		commandMenuCleanUp();
+	}
+	break;
 
-		default:
-			return;
+	default:
+		return;
 	}
 }
 
@@ -100,6 +106,6 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT /*Message*/, WPARAM /*
 #ifdef UNICODE
 extern "C" __declspec(dllexport) BOOL isUnicode()
 {
-    return TRUE;
+	return TRUE;
 }
 #endif //UNICODE

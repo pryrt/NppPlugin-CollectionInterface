@@ -11,5 +11,6 @@
 
 BOOL ConvertStaticToHyperlink(HWND hwndCtl);
 BOOL ConvertStaticToHyperlink(HWND hwndParent, UINT uiCtlId);
+COLORREF SetHyperlinkRGB(COLORREF rgbNew);	// added by ConfigUpdater plugin
 
 #endif

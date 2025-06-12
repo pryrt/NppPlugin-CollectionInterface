@@ -79,4 +79,17 @@ void showAboutModal();
 void showCollectionInterface();
 void showCIDownloadHelp();
 
+//
+// Need to expose the globals from PluginDefinition.cpp:
+//
+extern NppData nppData;
+extern FuncItem funcItem[nbFunc];
+
+//
+// My global variables
+//
+
+extern HWND g_hwndAboutDlg;
+extern HWND g_hwndCIDlg;
+
 #endif //PLUGINDEFINITION_H
