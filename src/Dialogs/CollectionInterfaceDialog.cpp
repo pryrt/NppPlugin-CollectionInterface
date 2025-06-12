@@ -53,26 +53,11 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		{
 			// store hwnd
 			g_hwndCIDlg = hwndDlg;
-
-			// determine dark mode
-			g_IsDarkMode = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
-			if (g_IsDarkMode) {
-				::SendMessage(nppData._nppHandle, NPPM_GETDARKMODECOLORS, sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(&myColors));
-				myBrushes.change(myColors);
-				myPens.change(myColors);
-
-				// subclass the tab control, because NPPM_DARKMODESUBCLASSANDTHEME doesn't apply to SysTabControl32
-				::SetWindowSubclass(GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL), cbTabSubclass, g_ci_dark_subclass, 0);
-
-				// For the rest, follow Notpead++ DarkMode settings
-				::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIDlg));
-			}
+			HWND hParent = GetParent(hwndDlg);
 
 			// Find Center and then position the window:
-
 			// find App center
 			RECT rc;
-			HWND hParent = GetParent(hwndDlg);
 			::GetClientRect(hParent, &rc);
 			POINT center;
 			int w = rc.right - rc.left;
@@ -80,13 +65,12 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			center.x = rc.left + w / 2;
 			center.y = rc.top + h / 2;
 			::ClientToScreen(hParent, &center);
-
 			// and position dialog
 			RECT dlgRect;
 			::GetClientRect(hwndDlg, &dlgRect);
 			int x = center.x - (dlgRect.right - dlgRect.left) / 2;
 			int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
-			::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
+			// ::SetWindowPos() moved to the end of the WM_INITDIALOG, _after_ the dark-mode changes, etc.
 
 			// populate Category list into the tab bar: "INSERTITEM" means RightToLeft, because it inserts it before the earlier tab.
 			std::wstring ws;
@@ -116,9 +100,27 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			//pobjCI->getListsFromJson();
 			_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 
-			// make sure everything is up-to-date
-			//::UpdateWindow(hwndTab);
-			::UpdateWindow(g_hwndCIDlg);
+			// Dark Mode Subclass and Theme: needs to go _after_ all the controls have been initialized
+			LRESULT nppVersion = ::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 1, 0);	// HIWORD(nppVersion) = major version; LOWORD(nppVersion) = zero-padded minor (so 8|500 will come after 8|410)
+			LRESULT darkdialogVersion = MAKELONG(540, 8);		// NPPM_GETDARKMODECOLORS requires 8.4.1 and NPPM_DARKMODESUBCLASSANDTHEME requires 8.5.4
+			LRESULT localsubclassVersion = MAKELONG(810, 8);	// from 8.540 to 8.810 (at least), need to do local subclassing because of tab control
+			g_IsDarkMode = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
+			if (g_IsDarkMode && (nppVersion>=darkdialogVersion)) {
+				::SendMessage(nppData._nppHandle, NPPM_GETDARKMODECOLORS, sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(&myColors));
+				myBrushes.change(myColors);
+				myPens.change(myColors);
+
+				// in older N++, need to subclass the tab control myself, because NPPM_DARKMODESUBCLASSANDTHEME doesn't apply to SysTabControl32 from 8.5.4 (when introduced) to 8.8.1 (at least); hopefully, 8.8.2 will have that fixed
+				if (nppVersion <= localsubclassVersion) {
+					::SetWindowSubclass(GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL), cbTabSubclass, g_ci_dark_subclass, 0);
+				}
+
+				// For the rest, follow Notpead++ DarkMode settings
+				::SendMessage(nppData._nppHandle, NPPM_DARKMODESUBCLASSANDTHEME, static_cast<WPARAM>(NppDarkMode::dmfInit), reinterpret_cast<LPARAM>(g_hwndCIDlg));
+			}
+
+			// Finally, show the dialog using SetWindowPos()
+			::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
 		}
 
 		return true;
@@ -507,6 +509,10 @@ INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 	switch (uMsg) {
 		case WM_INITDIALOG:
 		{
+			// populate with help text:
+			HWND hEdit = ::GetDlgItem(hwndDlg, IDC_CIDH_BIGTEXT);
+			::SetWindowText(hEdit, wsHelpText.c_str());
+
 			// store hwnd
 			g_hwndCIHlpDlg = hwndDlg;
 
@@ -539,16 +545,6 @@ INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 			int x = center.x - (dlgRect.right - dlgRect.left) / 2;
 			int y = center.y - (dlgRect.bottom - dlgRect.top) / 2;
 			::SetWindowPos(hwndDlg, HWND_TOP, x, y, (dlgRect.right - dlgRect.left), (dlgRect.bottom - dlgRect.top), SWP_SHOWWINDOW);
-
-			// populate with help text:
-			HWND hEdit = ::GetDlgItem(hwndDlg, IDC_CIDH_BIGTEXT);
-			::SetWindowText(hEdit, wsHelpText.c_str());
-			//::SendMessage(hEdit, EM_SETREADONLY, static_cast<WPARAM>(false), 0);
-			//::SendMessage(hEdit, WM_CLEAR, 0, 0);
-			//::SendMessage(hEdit, EM_SETSEL, static_cast<WPARAM>(-1), static_cast<LPARAM>(-1));
-			//::SendMessage(hEdit, EM_SETREADONLY, static_cast<WPARAM>(true), 0);
-			//::SendMessage(hwndDlg, WM_SIZE, static_cast<WPARAM>(dlgRect.right - dlgRect.left), static_cast<LPARAM>(dlgRect.bottom - dlgRect.top));
-
 		}
 
 		return true;
@@ -594,7 +590,7 @@ INT_PTR CALLBACK cidlHelpDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 	}
 }
 
-static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass , DWORD_PTR /*dwRefData*/)
+static LRESULT CALLBACK cbTabSubclass(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR /*dwRefData*/)
 {
 	if (!g_IsDarkMode) return false;
 	switch (uMsg)
