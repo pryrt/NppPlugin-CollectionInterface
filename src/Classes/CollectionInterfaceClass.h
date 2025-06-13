@@ -32,7 +32,7 @@ public:
 	//bool downloadFileToDisk(const std::wstring& url, const std::string& path);
 	//bool downloadFileToDisk(const std::string& url, const std::wstring& path);
 	bool downloadFileToDisk(const std::wstring& url, const std::wstring& path);
-	void getListsFromJson(void);
+	bool getListsFromJson(void);
 
 	// getter methods
 	std::wstring nppCfgDir(void) { return _nppCfgDir; };
@@ -46,6 +46,7 @@ public:
 	bool isFunctionListDirWritable(void) { return _is_dir_writable(_nppCfgFunctionListDir); };
 	bool isAutoCompletionDirWritable(void) { return _is_dir_writable(_nppCfgAutoCompletionDir); };
 	bool isThemesDirWritable(void) { return _is_dir_writable(_nppCfgThemesDir); };
+	bool areListsPopulated(void) { return _areListsPopulated; };
 
 	// if the chosen directory isn't writable, need to be able to use a directory that _is_ writable
 	//	as a TempDir, and then will need to use runas to copy from the TempDir to the real dir.
@@ -69,4 +70,5 @@ private:
 		_nppCfgThemesDir;
 
 	HWND _hwndNPP;
+	bool _areListsPopulated;
 };
