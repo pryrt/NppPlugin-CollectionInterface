@@ -6,7 +6,7 @@
 CollectionInterface::CollectionInterface(HWND hwndNpp) {
 	_hwndNPP = hwndNpp;
 	_populateNppDirs();
-	getListsFromJson();
+	_areListsPopulated = getListsFromJson();
 };
 
 void CollectionInterface::_populateNppDirs(void) {
@@ -228,8 +228,9 @@ std::string CollectionInterface::_xml_unentity(const std::string& text)
 }
 #pragma warning ( pop )
 
-void CollectionInterface::getListsFromJson(void)
+bool CollectionInterface::getListsFromJson(void)
 {
+	bool didThemeFail = false;
 	auto string2wstring = [](std::string str) {
 		if (str.empty()) return std::wstring();
 		int wsz = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
@@ -242,9 +243,22 @@ void CollectionInterface::getListsFromJson(void)
 	// Process Theme JSON
 	////////////////////////////////
 	std::vector<char> vcThemeJSON = downloadFileInMemory(L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/master/themes/.toc.json");
-	if ((vcThemeJSON.size() < 2) || (vcThemeJSON[0] != L'[')) {
-		// issue#13: don't try to parse if there is no data to parse
-		::MessageBox(_hwndNPP, L"Problems downloading Themes Collection information.\nYou might want to check your internet connection.", L"Download Problems", MB_ICONWARNING);
+	if (vcThemeJSON.empty()) {
+		// issue#13: do not continue if there's internet/connection problems
+		return false;	// nothing downloaded, so want to know to close the download-dialog to avoid annoying user with useless empty listbox
+	}
+	else if (vcThemeJSON[0] != L'[') {
+		// related to issue#13: if downloadFileInMemory returns "404 Not Found" or similar, don't try to parse as JSON.
+		//	easiest check: if the JSON isn't the expected [...] JSON array, don't continue with the _theme_;
+		//			however, can still move to the UDL section, because that might still work, and since UDL is the primary purpose, it's probably worth it if UDL is working even if Themes aren't.
+		std::string msg = "Cannot interpret Themes Collection information:\n\n";
+		msg += vcThemeJSON.data();
+		if (msg.size() > 100) {
+			msg.resize(100);
+			msg += "\n...";
+		}
+		::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Download Problems", MB_ICONWARNING);
+		didThemeFail = true;
 	}
 	else {
 		try
@@ -259,10 +273,12 @@ void CollectionInterface::getListsFromJson(void)
 		catch (nlohmann::json::exception& e) {
 			std::string msg = std::string("JSON Error in Theme data: ") + e.what();
 			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
+			didThemeFail = true;
 		}
 		catch (std::exception& e) {
 			std::string msg = std::string("Unrecognized Error in Theme data: ") + e.what();
 			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
+			didThemeFail = true;
 		}
 	}
 
@@ -270,9 +286,22 @@ void CollectionInterface::getListsFromJson(void)
 	// Process UDL JSON
 	////////////////////////////////
 	std::vector<char> vcUdlJSON = downloadFileInMemory(L"https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/refs/heads/master/udl-list.json");
-	if ((vcUdlJSON.size() < 2) || (vcUdlJSON[0] != L'{')) {
-		// issue#13: don't try to parse if there is no data to parse
-		::MessageBox(_hwndNPP, L"Problems downloading UDL Collection information.\nYou might want to check your internet connection.", L"Download Problems", MB_ICONWARNING);
+	if (vcUdlJSON.empty()) {
+		// issue#13: do not continue if there's internet/connection problems
+		return false;	// nothing downloaded, so want to know to close the download-dialog to avoid annoying user with useless empty listbox
+	}
+	else if (vcUdlJSON[0] != L'{') {
+		// related to issue#13: if downloadFileInMemory returns "404 Not Found" or similar, don't try to parse as JSON.
+		//	easiest check: if the JSON isn't the expected [...] JSON array, don't continue with the _theme_;
+		std::string msg = "Cannot interpret UDL Collection information:\n\n";
+		msg += vcUdlJSON.data();
+		if (msg.size() > 100) {
+			msg.resize(100);
+			msg += "\n...";
+		}
+		if (!didThemeFail)
+			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Download Problems", MB_ICONWARNING);
+		return false;	// without UDL info, it's not worth displaying the Download Dialog
 	}
 	else {
 		try
@@ -366,14 +395,17 @@ void CollectionInterface::getListsFromJson(void)
 		catch (nlohmann::json::exception& e) {
 			std::string msg = std::string("JSON Error in UDL data: ") + e.what();
 			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
+			return false;	// without UDL info, it's not worth displaying the Download Dialog
 		}
 		catch (std::exception& e) {
 			std::string msg = std::string("Unrecognized Error in UDL data: ") + e.what();
 			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
+			return false;	// without UDL info, it's not worth displaying the Download Dialog
 		}
 	}
 
-	return;
+	// if it makes it here, there is enough data to be worth displaying the dialog
+	return true;
 }
 
 std::wstring& CollectionInterface::_wsDeleteTrailingNulls(std::wstring& str)

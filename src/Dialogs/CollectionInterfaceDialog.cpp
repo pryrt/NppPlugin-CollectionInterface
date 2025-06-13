@@ -97,7 +97,14 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"READY");
 
 			pobjCI = new CollectionInterface(hParent);
-			//pobjCI->getListsFromJson();
+			if (!pobjCI->areListsPopulated()) {
+				EndDialog(hwndDlg, 0);
+				DestroyWindow(hwndDlg);
+				g_hwndCIDlg = nullptr;
+				delete pobjCI;
+				pobjCI = NULL;
+				return true;
+			}
 			_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 
 			// Dark Mode Subclass and Theme: needs to go _after_ all the controls have been initialized
@@ -105,7 +112,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			LRESULT darkdialogVersion = MAKELONG(540, 8);		// NPPM_GETDARKMODECOLORS requires 8.4.1 and NPPM_DARKMODESUBCLASSANDTHEME requires 8.5.4
 			LRESULT localsubclassVersion = MAKELONG(810, 8);	// from 8.540 to 8.810 (at least), need to do local subclassing because of tab control
 			g_IsDarkMode = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
-			if (g_IsDarkMode && (nppVersion>=darkdialogVersion)) {
+			if (g_IsDarkMode && (nppVersion >= darkdialogVersion)) {
 				::SendMessage(nppData._nppHandle, NPPM_GETDARKMODECOLORS, sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(&myColors));
 				myBrushes.change(myColors);
 				myPens.change(myColors);
@@ -219,13 +226,16 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				{
 					std::wstring wsCategory = _get_tab_category_wstr(hwndDlg, IDC_CI_TABCTRL);
 					LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETCURSEL, 0, 0);
-					switch (selectedFileIndex) {
-						case CB_ERR:
-							::MessageBox(NULL, L"Could not understand FILE combobox; sorry", L"Download Error", MB_ICONERROR);
-							return true;
+					if (selectedFileIndex == CB_ERR) {
+						::MessageBox(NULL, L"Could not understand name selection; sorry", L"Download Error", MB_ICONERROR);
+						return true;
 					}
 
 					LRESULT needFileLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETTEXTLEN, selectedFileIndex, 0);
+					if (needFileLen == LB_ERR) {
+						::MessageBox(NULL, L"Could not understand name selection; sorry", L"Download Error", MB_ICONERROR);
+						return true;
+					}
 					std::wstring wsFilename(needFileLen, 0);
 					::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
 
@@ -334,10 +344,12 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					}
 
 					// update progress bar
-					::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
 					wchar_t wcDLPCT[256];
 					swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
-					Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+					if (didDownload) {
+						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
+						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+					}
 
 					// also download AC and FL, if applicable
 					std::vector<std::wstring> xtra = { L"AC", L"FL" };
@@ -375,15 +387,24 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 							}
 						}
 						// update progress bar
-						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
 						swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
-						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+						if (didDownload) {
+							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
+							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+						}
 					}
 
 					// Final update of progress bar: 100%
-					::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
-					swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
-					Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+					if (didDownload) {
+						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
+						swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
+						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+					}
+					else {
+						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+						swprintf_s(wcDLPCT, L"Nothing to Download.  [DONE]");
+						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+					}
 				}
 				return true;
 				case IDC_CI_HELPBTN:
