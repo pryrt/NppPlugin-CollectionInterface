@@ -242,100 +242,134 @@ void CollectionInterface::getListsFromJson(void)
 	// Process Theme JSON
 	////////////////////////////////
 	std::vector<char> vcThemeJSON = downloadFileInMemory(L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/master/themes/.toc.json");
-	nlohmann::json jTheme = nlohmann::json::parse(vcThemeJSON);
-	std::string v = jTheme.at(0).get<std::string>();
-	for (const auto& item : jTheme.items()) {
-		std::wstring ws = string2wstring(item.value().get<std::string>());
-		vThemeFiles.push_back(ws.c_str());
+	if ((vcThemeJSON.size() < 2) || (vcThemeJSON[0] != L'[')) {
+		// issue#13: don't try to parse if there is no data to parse
+		::MessageBox(_hwndNPP, L"Problems downloading Themes Collection information.\nYou might want to check your internet connection.", L"Download Problems", MB_ICONWARNING);
+	}
+	else {
+		try
+		{
+			nlohmann::json jTheme = nlohmann::json::parse(vcThemeJSON);
+			std::string v = jTheme.at(0).get<std::string>();
+			for (const auto& item : jTheme.items()) {
+				std::wstring ws = string2wstring(item.value().get<std::string>());
+				vThemeFiles.push_back(ws.c_str());
+			}
+		}
+		catch (nlohmann::json::exception& e) {
+			std::string msg = std::string("JSON Error in Theme data: ") + e.what();
+			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
+		}
+		catch (std::exception& e) {
+			std::string msg = std::string("Unrecognized Error in Theme data: ") + e.what();
+			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
+		}
 	}
 
 	////////////////////////////////
 	// Process UDL JSON
 	////////////////////////////////
 	std::vector<char> vcUdlJSON = downloadFileInMemory(L"https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/refs/heads/master/udl-list.json");
-	nlohmann::json jUdl = nlohmann::json::parse(vcUdlJSON);
-	// for a list, the key() is just the index, and the value() is the sub-object
-	for (const auto& item : jUdl["UDLs"].items()) {
-		auto j = item.value();
-		std::wstring ws_id_name = string2wstring(j["id-name"].get<std::string>());
-		std::wstring udl_base = L"https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/master/";
+	if ((vcUdlJSON.size() < 2) || (vcUdlJSON[0] != L'{')) {
+		// issue#13: don't try to parse if there is no data to parse
+		::MessageBox(_hwndNPP, L"Problems downloading UDL Collection information.\nYou might want to check your internet connection.", L"Download Problems", MB_ICONWARNING);
+	}
+	else {
+		try
+		{
+			nlohmann::json jUdl = nlohmann::json::parse(vcUdlJSON);
+			// for a list, the key() is just the index, and the value() is the sub-object
+			for (const auto& item : jUdl["UDLs"].items()) {
+				auto j = item.value();
+				std::wstring ws_id_name = string2wstring(j["id-name"].get<std::string>());
+				std::wstring udl_base = L"https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/master/";
 
-		// Logic for UDL -> URL
-		if (j.contains("repository")) {
-			std::wstring sUDL = L"";
-			if (j["repository"].is_boolean()) {		// URL repo should never be boolean; but if it is, generate default URL
-				sUDL = udl_base + L"UDLs/" + ws_id_name + L".xml";
-			}
-			if (j["repository"].is_string()) {
-				std::wstring ws = string2wstring(j["repository"].get<std::string>());
-				if (ws == L"") {
-					sUDL = udl_base + L"UDLs/" + ws_id_name + L".xml";
-				}
-				else if (ws.find(L"http") == 0) {	// if string _starts_ with http or https, it's the full URL
-					sUDL = ws;
-				}
-			}
+				// Logic for UDL -> URL
+				if (j.contains("repository")) {
+					std::wstring sUDL = L"";
+					if (j["repository"].is_boolean()) {		// URL repo should never be boolean; but if it is, generate default URL
+						sUDL = udl_base + L"UDLs/" + ws_id_name + L".xml";
+					}
+					if (j["repository"].is_string()) {
+						std::wstring ws = string2wstring(j["repository"].get<std::string>());
+						if (ws == L"") {
+							sUDL = udl_base + L"UDLs/" + ws_id_name + L".xml";
+						}
+						else if (ws.find(L"http") == 0) {	// if string _starts_ with http or https, it's the full URL
+							sUDL = ws;
+						}
+					}
 
-			// assign into the data structure...
-			if (sUDL != L"") {
-				mapUDL[ws_id_name] = sUDL;
+					// assign into the data structure...
+					if (sUDL != L"") {
+						mapUDL[ws_id_name] = sUDL;
+					}
+				}
+
+				// Extract display-name
+				if (j.contains("display-name")) {
+					std::wstring wdisplay_name = string2wstring(_xml_unentity(j["display-name"].get<std::string>()));
+
+					// assign into the data structure...
+					if (wdisplay_name != L"") {
+						mapDISPLAY[ws_id_name] = wdisplay_name;
+						revDISPLAY[wdisplay_name] = ws_id_name;
+					}
+				}
+
+				// Logic for functionList -> URL
+				if (j.contains("functionList")) {
+					std::wstring wsFuncList = L"";
+					if (j["functionList"].is_boolean() && j["functionList"].get<bool>()) {
+						wsFuncList = udl_base + L"functionList/" + ws_id_name + L".xml";
+					}
+					if (j["functionList"].is_string()) {
+						std::wstring ws = string2wstring(j["functionList"].get<std::string>());
+
+						if (ws.find(L"http") == 0) {	// if string _starts_ with http or https, it's the full URL
+							wsFuncList = ws;
+						}
+						else {
+							wsFuncList = udl_base + L"functionList/" + ws + L".xml";
+						}
+					}
+
+					// assign wsFuncList into the data structure...
+					if (wsFuncList != L"") {
+						mapFL[ws_id_name] = wsFuncList;
+					}
+				}
+
+				// Logic for autoCompletion -> URL
+				if (j.contains("autoCompletion")) {
+					std::wstring wsAutoComp = L"";
+					if (j["autoCompletion"].is_boolean()) {
+						wsAutoComp = udl_base + L"autoCompletion/" + ws_id_name + L".xml";
+					}
+					if (j["autoCompletion"].is_string()) {
+						std::wstring ws = string2wstring(j["autoCompletion"].get<std::string>());
+						if (ws.find(L"http") == 0) {
+							wsAutoComp = ws;
+						}
+						else {
+							wsAutoComp = udl_base + L"autoCompletion/" + ws + L".xml";
+						}
+					}
+
+					// assign sAutoComp into the data structure...
+					if (wsAutoComp != L"") {
+						mapAC[ws_id_name] = wsAutoComp;
+					}
+				}
 			}
 		}
-
-		// Extract display-name
-		if (j.contains("display-name")) {
-			std::wstring wdisplay_name = string2wstring(_xml_unentity(j["display-name"].get<std::string>()));
-
-			// assign into the data structure...
-			if (wdisplay_name != L"") {
-				mapDISPLAY[ws_id_name] = wdisplay_name;
-				revDISPLAY[wdisplay_name] = ws_id_name;
-			}
+		catch (nlohmann::json::exception& e) {
+			std::string msg = std::string("JSON Error in UDL data: ") + e.what();
+			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
 		}
-
-		// Logic for functionList -> URL
-		if (j.contains("functionList")) {
-			std::wstring wsFuncList = L"";
-			if (j["functionList"].is_boolean() && j["functionList"].get<bool>()) {
-				wsFuncList = udl_base + L"functionList/" + ws_id_name + L".xml";
-			}
-			if (j["functionList"].is_string()) {
-				std::wstring ws = string2wstring(j["functionList"].get<std::string>());
-
-				if (ws.find(L"http") == 0) {	// if string _starts_ with http or https, it's the full URL
-					wsFuncList = ws;
-				}
-				else {
-					wsFuncList = udl_base + L"functionList/" + ws + L".xml";
-				}
-			}
-
-			// assign wsFuncList into the data structure...
-			if (wsFuncList != L"") {
-				mapFL[ws_id_name] = wsFuncList;
-			}
-		}
-
-		// Logic for autoCompletion -> URL
-		if (j.contains("autoCompletion")) {
-			std::wstring wsAutoComp = L"";
-			if (j["autoCompletion"].is_boolean()) {
-				wsAutoComp = udl_base + L"autoCompletion/" + ws_id_name + L".xml";
-			}
-			if (j["autoCompletion"].is_string()) {
-				std::wstring ws = string2wstring(j["autoCompletion"].get<std::string>());
-				if (ws.find(L"http") == 0) {
-					wsAutoComp = ws;
-				}
-				else {
-					wsAutoComp = udl_base + L"autoCompletion/" + ws + L".xml";
-				}
-			}
-
-			// assign sAutoComp into the data structure...
-			if (wsAutoComp != L"") {
-				mapAC[ws_id_name] = wsAutoComp;
-			}
+		catch (std::exception& e) {
+			std::string msg = std::string("Unrecognized Error in UDL data: ") + e.what();
+			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
 		}
 	}
 
@@ -371,7 +405,7 @@ bool CollectionInterface::_is_dir_writable(const std::wstring& path)
 std::wstring CollectionInterface::getWritableTempDir(void)
 {
 	// first try the system TEMP
-	std::wstring tempDir(MAX_PATH+1, L'\0');
+	std::wstring tempDir(MAX_PATH + 1, L'\0');
 	GetTempPath(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
 	_wsDeleteTrailingNulls(tempDir);
 
@@ -418,5 +452,5 @@ bool CollectionInterface::ask_overwrite_if_exists(const std::wstring& path)
 	if (!PathFileExists(path.c_str())) return true;	// if file doesn't exist, it's okay to "overwrite" nothing ;-)
 	std::wstring msg = L"The path\r\n" + path + L"\r\nalready exists.  Should I overwrite it?";
 	int ans = ::MessageBox(_hwndNPP, msg.c_str(), L"Overwrite File?", MB_YESNO);
-	return ans==IDYES;
+	return ans == IDYES;
 }
