@@ -135,6 +135,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			switch (LOWORD(wParam)) {
 				case IDOK:
 				case IDC_CI_BTN_DONE:
+				{
 					if (didDownload) {
 						int ans = ::MessageBox(hwndDlg, L"Would you like to restart now?", L"Restart Needed", MB_YESNOCANCEL);
 						switch (ans) {
@@ -193,227 +194,277 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 						}
 					}
 					// intentionally fall through to IDCANCEL so it exits the dialog
+				}
 				case IDCANCEL:
+				{
 					EndDialog(hwndDlg, 0);
 					DestroyWindow(hwndDlg);
 					g_hwndCIDlg = nullptr;
 					delete pobjCI;
 					pobjCI = NULL;
 					return true;
+				}
 				case IDC_CI_COMBO_FILE:
+				{
 					if (HIWORD(wParam) == LBN_SELCHANGE) {
-						LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETCURSEL, 0, 0);
-						if (selectedIndex != LB_ERR) {
-							LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXTLEN, selectedIndex, 0);
-							std::wstring wsFilename(needLen, 0);
-							::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
-							//::MessageBox(NULL, wsFilename.c_str(), L"Which File:", MB_OK);
-
-							// look at pobjCI->revDISPLAY[]
-							std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
-							HWND hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC);
-							EnableWindow(hwCHK, static_cast<BOOL>(pobjCI->mapAC.count(ws_id_name)));
-							hwCHK = GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL);
-							EnableWindow(hwCHK, static_cast<BOOL>(pobjCI->mapFL.count(ws_id_name)));
-
+						std::vector<int> vBuf;
+						LRESULT selectionCount = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETSELCOUNT, 0, 0);
+						if (selectionCount == LB_ERR) {	// gives error on single-selection
+							selectionCount = 1;
+							vBuf.resize(selectionCount);
+							LRESULT selectedIndex = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETCURSEL, 0, 0);
+							vBuf[0] = static_cast<int>(selectedIndex);
 						}
+						else {
+							vBuf.resize(selectionCount);
+							LRESULT stat = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETSELITEMS, selectionCount, reinterpret_cast<LPARAM>(vBuf.data()));
+							if (stat == LB_ERR) {
+								for (int b = 0; b < selectionCount; b++)
+									vBuf[b] = static_cast<int>(stat);
+							}
+						}
+						// start with assuming disabled checkboxes
+						bool anyAC = false, anyFL = false;
+						// then go through each selection item, and update flag as needed
+						for (auto selectedIndex: vBuf) {
+							if (selectedIndex != LB_ERR) {
+								LRESULT needLen = ::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXTLEN, selectedIndex, 0);
+								std::wstring wsFilename(needLen, 0);
+								::SendMessage(reinterpret_cast<HWND>(lParam), LB_GETTEXT, selectedIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
+								//::MessageBox(NULL, wsFilename.c_str(), L"Which File:", MB_OK);
+
+								// look at pobjCI->revDISPLAY[]
+								std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
+								anyAC |= static_cast<bool>(pobjCI->mapAC.count(ws_id_name));
+								anyFL |= static_cast<bool>(pobjCI->mapFL.count(ws_id_name));
+							}
+						}
+						EnableWindow(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC), anyAC);
+						EnableWindow(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL), anyFL);
+
 						// reset progress bar
 						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
 						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"READY");
 					}
 					return true;
+				}
 				case IDC_CI_BTN_DOWNLOAD:
 				{
 					std::wstring wsCategory = _get_tab_category_wstr(hwndDlg, IDC_CI_TABCTRL);
-					LRESULT selectedFileIndex = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETCURSEL, 0, 0);
-					if (selectedFileIndex == CB_ERR) {
-						::MessageBox(NULL, L"Could not understand name selection; sorry", L"Download Error", MB_ICONERROR);
-						return true;
-					}
+					HWND hwLBFile = GetDlgItem(hwndDlg, IDC_CI_COMBO_FILE);
 
-					LRESULT needFileLen = ::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETTEXTLEN, selectedFileIndex, 0);
-					if (needFileLen == LB_ERR) {
-						::MessageBox(NULL, L"Could not understand name selection; sorry", L"Download Error", MB_ICONERROR);
-						return true;
-					}
-					std::wstring wsFilename(needFileLen, 0);
-					::SendDlgItemMessage(hwndDlg, IDC_CI_COMBO_FILE, LB_GETTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
-
-					// update progress bar
-					::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
-					Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"Downloading... 0%");
-
-					int total = 1;
-					std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
-					std::wstring wsURL = L"";
-					std::wstring wsPath = L"";
-					bool isWritable = false;
-					std::map<std::wstring, std::map<std::wstring, std::wstring>> alsoDownload;
-					std::map<std::wstring, bool> extraWritable;
-					if (wsCategory == L"UDL") {
-						if (pobjCI->mapUDL.count(ws_id_name)) {
-							wsURL = pobjCI->mapUDL[ws_id_name];
-						}
-
-						wsPath = pobjCI->nppCfgUdlDir() + L"\\" + ws_id_name + L".xml";
-						isWritable = pobjCI->isUdlDirWritable();
-
-						// if chkAC, then also download AC
-						bool isCHK = BST_CHECKED == IsDlgButtonChecked(hwndDlg, IDC_CI_CHK_ALSO_AC);
-						bool isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC));
-						if (isEN && isCHK && pobjCI->mapAC.count(ws_id_name)) {
-							alsoDownload[L"AC"][L"URL"] = pobjCI->mapAC[ws_id_name];
-							size_t posLastSlash = alsoDownload[L"AC"][L"URL"].rfind(L'/');
-							std::wstring acName = (posLastSlash == std::wstring::npos) ? (ws_id_name + L".xml") : (alsoDownload[L"AC"][L"URL"].substr(posLastSlash + 1));
-							alsoDownload[L"AC"][L"PATH"] = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
-							extraWritable[L"AC"] = pobjCI->isAutoCompletionDirWritable();
-							total++;
-						}
-
-						// if cjkFL, then also download FL
-						isCHK = BST_CHECKED == IsDlgButtonChecked(hwndDlg, IDC_CI_CHK_ALSO_FL);
-						isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL));
-						if (isEN && isCHK && pobjCI->mapFL.count(ws_id_name)) {
-							alsoDownload[L"FL"][L"URL"] = pobjCI->mapFL[ws_id_name];
-							alsoDownload[L"FL"][L"PATH"] = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
-							extraWritable[L"FL"] = pobjCI->isFunctionListDirWritable();
-							total++;
-						}
-					}
-					else if (wsCategory == L"AutoCompletion") {
-						size_t posLastSlash = std::wstring::npos;
-						std::wstring acName = ws_id_name + L".xml";
-						if (pobjCI->mapAC.count(ws_id_name)) {
-							wsURL = pobjCI->mapAC[ws_id_name];
-							posLastSlash = wsURL.rfind(L'/');
-							if (posLastSlash != std::wstring::npos) {
-								acName = wsURL.substr(posLastSlash + 1);
-							}
-						}
-
-						wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
-						isWritable = pobjCI->isAutoCompletionDirWritable();
-					}
-					else if (wsCategory == L"FunctionList") {
-						if (pobjCI->mapFL.count(ws_id_name)) {
-							wsURL = pobjCI->mapFL[ws_id_name];
-						}
-
-						wsPath = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
-						isWritable = pobjCI->isFunctionListDirWritable();
-					}
-					else if (wsCategory == L"Theme") {
-						wsURL = L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + wsFilename;
-
-						wsPath = pobjCI->nppCfgThemesDir() + L"\\" + wsFilename;
-						isWritable = pobjCI->isThemesDirWritable();
-					}
-
-					int count = 0;
-					if (isWritable) {
-						// download directly to the final destination
-						didDownload |= pobjCI->downloadFileToDisk(wsURL, wsPath);
-						std::wstring msg = L"Downloaded to " + wsPath;
-						//::MessageBox(hwndDlg, msg.c_str(), L"Download Successful", MB_OK);
-						count++;
+					// prepare for N selections
+					std::vector<int> vBuf;
+					LRESULT selectionCount = ::SendMessage(hwLBFile, LB_GETSELCOUNT, 0, 0);
+					if (selectionCount == LB_ERR) {	// gives error on single-selection
+						selectionCount = 1;
+						vBuf.resize(selectionCount);
+						LRESULT selectedIndex = ::SendMessage(hwLBFile, LB_GETCURSEL, 0, 0);
+						vBuf[0] = static_cast<int>(selectedIndex);
 					}
 					else {
-						// check if it needs to be overwritten before elevating permissions
-						if (pobjCI->ask_overwrite_if_exists(wsPath)) {
-							// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
-							std::wstring wsAsk = L"Cannot write to " + wsPath;
-							wsAsk += L"\nI will try again with elevated UAC permission.";
-							int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
-							if (ans == IDOK) {
-								std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
-								pobjCI->downloadFileToDisk(wsURL, tmpPath);
-								std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + wsPath;
-								std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + wsPath + L"\"";
-								ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
-								//::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
-								count++;
-								didDownload = true;
+						vBuf.resize(selectionCount);
+						LRESULT stat = ::SendMessage(hwLBFile, LB_GETSELITEMS, selectionCount, reinterpret_cast<LPARAM>(vBuf.data()));
+						if (stat == LB_ERR) {
+							for (int b = 0; b < selectionCount; b++)
+								vBuf[b] = static_cast<int>(stat);
+						}
+					}
+
+					// loop through each index in the buffer, and download as needed
+					for(auto selectedFileIndex: vBuf) {
+						if (selectedFileIndex == LB_ERR) {
+							::MessageBox(NULL, L"Could not understand name selection; sorry", L"Download Error", MB_ICONERROR);
+							return true;
+						}
+
+						LRESULT needFileLen = ::SendMessage(hwLBFile, LB_GETTEXTLEN, selectedFileIndex, 0);
+						if (needFileLen == LB_ERR) {
+							::MessageBox(NULL, L"Could not understand name selection; sorry", L"Download Error", MB_ICONERROR);
+							return true;
+						}
+						std::wstring wsFilename(needFileLen, 0);
+						::SendMessage(hwLBFile, LB_GETTEXT, selectedFileIndex, reinterpret_cast<LPARAM>(wsFilename.data()));
+
+						// update progress bar
+						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), L"Downloading... 0%");
+
+						int total = 1;
+						std::wstring ws_id_name = (pobjCI->revDISPLAY.count(wsFilename)) ? pobjCI->revDISPLAY[wsFilename] : L"!!DoesNotExist!!";
+						std::wstring wsURL = L"";
+						std::wstring wsPath = L"";
+						bool isWritable = false;
+						std::map<std::wstring, std::map<std::wstring, std::wstring>> alsoDownload;
+						std::map<std::wstring, bool> extraWritable;
+						if (wsCategory == L"UDL") {
+							if (pobjCI->mapUDL.count(ws_id_name)) {
+								wsURL = pobjCI->mapUDL[ws_id_name];
 							}
-							else {
-								total--;
+
+							wsPath = pobjCI->nppCfgUdlDir() + L"\\" + ws_id_name + L".xml";
+							isWritable = pobjCI->isUdlDirWritable();
+
+							// if chkAC, then also download AC
+							bool isCHK = BST_CHECKED == IsDlgButtonChecked(hwndDlg, IDC_CI_CHK_ALSO_AC);
+							bool isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_AC));
+							if (isEN && isCHK && pobjCI->mapAC.count(ws_id_name)) {
+								alsoDownload[L"AC"][L"URL"] = pobjCI->mapAC[ws_id_name];
+								size_t posLastSlash = alsoDownload[L"AC"][L"URL"].rfind(L'/');
+								std::wstring acName = (posLastSlash == std::wstring::npos) ? (ws_id_name + L".xml") : (alsoDownload[L"AC"][L"URL"].substr(posLastSlash + 1));
+								alsoDownload[L"AC"][L"PATH"] = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
+								extraWritable[L"AC"] = pobjCI->isAutoCompletionDirWritable();
+								total++;
 							}
+
+							// if cjkFL, then also download FL
+							isCHK = BST_CHECKED == IsDlgButtonChecked(hwndDlg, IDC_CI_CHK_ALSO_FL);
+							isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL));
+							if (isEN && isCHK && pobjCI->mapFL.count(ws_id_name)) {
+								alsoDownload[L"FL"][L"URL"] = pobjCI->mapFL[ws_id_name];
+								alsoDownload[L"FL"][L"PATH"] = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
+								extraWritable[L"FL"] = pobjCI->isFunctionListDirWritable();
+								total++;
+							}
+						}
+						else if (wsCategory == L"AutoCompletion") {
+							size_t posLastSlash = std::wstring::npos;
+							std::wstring acName = ws_id_name + L".xml";
+							if (pobjCI->mapAC.count(ws_id_name)) {
+								wsURL = pobjCI->mapAC[ws_id_name];
+								posLastSlash = wsURL.rfind(L'/');
+								if (posLastSlash != std::wstring::npos) {
+									acName = wsURL.substr(posLastSlash + 1);
+								}
+							}
+
+							wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
+							isWritable = pobjCI->isAutoCompletionDirWritable();
+						}
+						else if (wsCategory == L"FunctionList") {
+							if (pobjCI->mapFL.count(ws_id_name)) {
+								wsURL = pobjCI->mapFL[ws_id_name];
+							}
+
+							wsPath = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
+							isWritable = pobjCI->isFunctionListDirWritable();
+						}
+						else if (wsCategory == L"Theme") {
+							wsURL = L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + wsFilename;
+
+							wsPath = pobjCI->nppCfgThemesDir() + L"\\" + wsFilename;
+							isWritable = pobjCI->isThemesDirWritable();
+						}
+
+						int count = 0;
+						if (isWritable) {
+							// download directly to the final destination
+							didDownload |= pobjCI->downloadFileToDisk(wsURL, wsPath);
+							std::wstring msg = L"Downloaded to " + wsPath;
+							//::MessageBox(hwndDlg, msg.c_str(), L"Download Successful", MB_OK);
+							count++;
 						}
 						else {
-							total--;
-						}
-					}
-
-					// update progress bar
-					wchar_t wcDLPCT[256];
-					swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
-					if (didDownload) {
-						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
-						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
-					}
-
-					// also download AC and FL, if applicable
-					std::vector<std::wstring> xtra = { L"AC", L"FL" };
-					for (auto category : xtra) {
-						if (alsoDownload.count(category)) {
-							std::wstring xURL = alsoDownload[category][L"URL"];
-							std::wstring xPath = alsoDownload[category][L"PATH"];
-							if (extraWritable[category]) {
-								pobjCI->downloadFileToDisk(xURL, xPath);
-								count++;
-								didDownload = true;
-							}
-							else {
-								if (pobjCI->ask_overwrite_if_exists(xPath)) {
-									// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
-									std::wstring wsAsk = L"Cannot write to " + xPath;
-									wsAsk += L"\nI will try again with elevated UAC permission.";
-									int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
-									if (ans == IDOK) {
-										std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
-										pobjCI->downloadFileToDisk(xURL, tmpPath);
-										std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + xPath;
-										std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + xPath + L"\"";
-										ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
-										count++;
-										didDownload = true;
-									}
-									else {
-										total--;
-									}
+							// check if it needs to be overwritten before elevating permissions
+							if (pobjCI->ask_overwrite_if_exists(wsPath)) {
+								// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
+								std::wstring wsAsk = L"Cannot write to " + wsPath;
+								wsAsk += L"\nI will try again with elevated UAC permission.";
+								int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
+								if (ans == IDOK) {
+									std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
+									pobjCI->downloadFileToDisk(wsURL, tmpPath);
+									std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + wsPath;
+									std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + wsPath + L"\"";
+									ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+									//::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
+									count++;
+									didDownload = true;
 								}
 								else {
 									total--;
 								}
 							}
+							else {
+								total--;
+							}
 						}
+
 						// update progress bar
+						wchar_t wcDLPCT[256];
 						swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
 						if (didDownload) {
 							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
 							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
 						}
+
+						// also download AC and FL, if applicable
+						std::vector<std::wstring> xtra = { L"AC", L"FL" };
+						for (auto category : xtra) {
+							if (alsoDownload.count(category)) {
+								std::wstring xURL = alsoDownload[category][L"URL"];
+								std::wstring xPath = alsoDownload[category][L"PATH"];
+								if (extraWritable[category]) {
+									pobjCI->downloadFileToDisk(xURL, xPath);
+									count++;
+									didDownload = true;
+								}
+								else {
+									if (pobjCI->ask_overwrite_if_exists(xPath)) {
+										// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
+										std::wstring wsAsk = L"Cannot write to " + xPath;
+										wsAsk += L"\nI will try again with elevated UAC permission.";
+										int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
+										if (ans == IDOK) {
+											std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
+											pobjCI->downloadFileToDisk(xURL, tmpPath);
+											std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + xPath;
+											std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + xPath + L"\"";
+											ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+											count++;
+											didDownload = true;
+										}
+										else {
+											total--;
+										}
+									}
+									else {
+										total--;
+									}
+								}
+							}
+							// update progress bar
+							swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
+							if (didDownload) {
+								::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
+								Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+							}
+						}
+
+						// Final update of progress bar: 100%
+						if (didDownload) {
+							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
+							swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
+							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+						}
+						else {
+							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
+							swprintf_s(wcDLPCT, L"Nothing to Download.  [DONE]");
+							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+						}
 					}
 
-					// Final update of progress bar: 100%
-					if (didDownload) {
-						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
-						swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
-						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
-					}
-					else {
-						::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
-						swprintf_s(wcDLPCT, L"Nothing to Download.  [DONE]");
-						Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
-					}
+					return true;
 				}
-				return true;
 				case IDC_CI_HELPBTN:
 				{
 					showCIDownloadHelp();
+					return true;
 				}
-				return true;
 				default:
+				{
 					return false;
+				}
 			}
 		case WM_NOTIFY:
 		{
