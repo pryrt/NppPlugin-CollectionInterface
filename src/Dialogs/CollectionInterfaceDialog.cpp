@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include <CommCtrl.h>
+#include <Shlwapi.h>
 
 
 HWND g_hwndCIDlg = nullptr, g_hwndCIHlpDlg = nullptr;
@@ -272,6 +273,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					}
 
 					// loop through each index in the buffer, and download as needed
+					std::map<std::wstring, std::wstring> mapUacDelayed;
 					for(auto selectedFileIndex: vBuf) {
 						if (selectedFileIndex == LB_ERR) {
 							::MessageBox(NULL, L"Could not understand name selection; sorry", L"Download Error", MB_ICONERROR);
@@ -367,23 +369,8 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 						else {
 							// check if it needs to be overwritten before elevating permissions
 							if (pobjCI->ask_overwrite_if_exists(wsPath)) {
-								// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
-								std::wstring wsAsk = L"Cannot write to " + wsPath;
-								wsAsk += L"\nI will try again with elevated UAC permission.";
-								int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
-								if (ans == IDOK) {
-									std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
-									pobjCI->downloadFileToDisk(wsURL, tmpPath);
-									std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + wsPath;
-									std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + wsPath + L"\"";
-									ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
-									//::MessageBox(hwndDlg, msg.c_str(), L"Download and UAC move", MB_OK);
-									count++;
-									didDownload = true;
-								}
-								else {
-									total--;
-								}
+								mapUacDelayed[wsURL] = wsPath;
+								total--;
 							}
 							else {
 								total--;
@@ -392,6 +379,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 						// update progress bar
 						wchar_t wcDLPCT[256];
+						if (total < 1) total = 1;
 						swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
 						if (didDownload) {
 							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
@@ -411,22 +399,8 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								}
 								else {
 									if (pobjCI->ask_overwrite_if_exists(xPath)) {
-										// download to a temp path, then use ShellExecute(runas) to move it from the temp path to the final destination
-										std::wstring wsAsk = L"Cannot write to " + xPath;
-										wsAsk += L"\nI will try again with elevated UAC permission.";
-										int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
-										if (ans == IDOK) {
-											std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT.xml";
-											pobjCI->downloadFileToDisk(xURL, tmpPath);
-											std::wstring msg = L"Downloaded from\n" + tmpPath + L"\nand moved to\n" + xPath;
-											std::wstring args = L"/C MOVE /Y \"" + tmpPath + L"\" \"" + xPath + L"\"";
-											ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
-											count++;
-											didDownload = true;
-										}
-										else {
-											total--;
-										}
+										mapUacDelayed[xURL] = xPath;
+										total--;
 									}
 									else {
 										total--;
@@ -434,6 +408,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								}
 							}
 							// update progress bar
+							if (total < 1) total = 1;
 							swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
 							if (didDownload) {
 								::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
@@ -450,6 +425,43 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 						else {
 							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 0, 0);
 							swprintf_s(wcDLPCT, L"Nothing to Download.  [DONE]");
+							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+						}
+					}
+
+					if (mapUacDelayed.size()) {
+						int total = static_cast<int>(mapUacDelayed.size()) + 1;			// want one extra "slot" for the MOVE command
+						int count = 0;
+						std::wstring wsAsk = L"Cannot write the following files:";
+						for (const auto& pair : mapUacDelayed) {
+							wsAsk += std::wstring(L"\n") + pair.second;
+						}
+						wsAsk += L"\n\nI will download temporary files, and then try to copy them to the right location with elevated UAC permission.  (The OS may prompt you for UAC.)";
+						int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
+						if (ans == IDOK) {
+							wchar_t wcDLPCT[256];
+							swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
+							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+
+							std::wstring args = L"/C ";
+
+							for (const auto& pair : mapUacDelayed) {
+								++count;
+								std::wstring tmpPath = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.DOWNLOAD.PRYRT." + std::to_wstring(count);
+								pobjCI->downloadFileToDisk(pair.first, tmpPath);
+								didDownload = true;
+								args += L"MOVE /Y \"" + tmpPath + L"\" \"" + pair.second + L"\" & ";
+
+								::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
+								swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
+								Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+							}
+
+							//::MessageBox(hwndDlg, (std::wstring(L"cmd.exe ") + args).c_str(), L"TODO: UAC Command", MB_OK);
+							ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
+
+							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
+							swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
 							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
 						}
 					}
