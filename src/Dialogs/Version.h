@@ -24,7 +24,7 @@
 //								// VERSION_TEXT This must match the tag pushed on the server minus the "v"
 #define VERSION_TEXT			TEXT(VERSION_STRING)
 //								// VERSION_STAGE				// "-alpha", "-beta", "-dev", ""
-#define VERSION_STAGE			"-dev"
+#define VERSION_STAGE			""
 #define VERSION_STAGE_WS		TEXT(VERSION_STAGE)
 #define VERSION_NAME			"CollectionInterface"
 #define VERSION_NAME_WS			TEXT(VERSION_NAME)
