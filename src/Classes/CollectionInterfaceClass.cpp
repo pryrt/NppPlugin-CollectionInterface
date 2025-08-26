@@ -1,6 +1,7 @@
 #include "CollectionInterfaceClass.h"
 // nlohmann/json.hpp
 #include "json.hpp"
+#include <Shlwapi.h>
 
 
 CollectionInterface::CollectionInterface(HWND hwndNpp) {
@@ -29,17 +30,33 @@ void CollectionInterface::_populateNppDirs(void) {
 	PathCchRemoveFileSpec(const_cast<PWSTR>(pluginDir.data()), pluginCfgDir.size());
 	delNull(pluginDir);
 
+	// %AppData%\FunctionList: FunctionList folder DOES NOT work in Cloud, so set it while _nppCfgDir is still in AppData
+	// _nppCfgFunctionListDir	#py# _nppCfgFunctionListDirectory = os.path.join(_nppConfigDirectory, 'functionList')
+	_nppCfgFunctionListDir = _nppCfgDir + L"\\functionList";
+
 	// %AppData%\Notepad++ or equiv is what I'm really looking for
 	// _nppCfgDir				#py# _nppConfigDirectory = os.path.dirname(os.path.dirname(notepad.getPluginConfigDir()))
 	_nppCfgDir = pluginDir;
 	PathCchRemoveFileSpec(const_cast<PWSTR>(_nppCfgDir.data()), pluginDir.size());
 	delNull(_nppCfgDir);
 
+	// CloudDirectory: if Notepad++ has cloud enabled, need to use that for some config files
+	sz = ::SendMessage(_hwndNPP, NPPM_GETSETTINGSONCLOUDPATH, 0, 0);	// get number of wchars in settings-on-cloud path (0 means settings-on-cloud is disabled)
+	if (sz) {
+		std::wstring wsCloudDir(sz + 1, '\0');
+		LRESULT szGot = ::SendMessage(_hwndNPP, NPPM_GETSETTINGSONCLOUDPATH, sz + 1, reinterpret_cast<LPARAM>(wsCloudDir.data()));
+		if (szGot == sz) {
+			delNull(wsCloudDir);
+			_nppCfgDir = wsCloudDir;
+		}
+	}
+
+	// TODO: -settingsDir
+
+	// UDL and Themes are both relative to AppData _or_ Cloud _or_ SettingsDir, so they should be set _after_ updating _nppCfgDir.
+
 	// _nppCfgUdlDir			#py# _nppCfgUdlDirectory = os.path.join(_nppConfigDirectory, 'userDefineLangs')
 	_nppCfgUdlDir = _nppCfgDir + L"\\userDefineLangs";
-
-	// _nppCfgFunctionListDir	#py# _nppCfgFunctionListDirectory = os.path.join(_nppConfigDirectory, 'functionList')
-	_nppCfgFunctionListDir = _nppCfgDir + L"\\functionList";
 
 	// _nppCfgThemesDir			#py# _nppCfgThemesDirectory = os.path.join(_nppConfigDirectory, 'themes')
 	_nppCfgThemesDir = _nppCfgDir + L"\\themes";
@@ -414,11 +431,38 @@ std::wstring& CollectionInterface::_wsDeleteTrailingNulls(std::wstring& str)
 	return str;
 }
 
+BOOL CollectionInterface::_RecursiveCreateDirectory(std::wstring wsPath)
+{
+	std::wstring wsParent = wsPath;
+	PathRemoveFileSpec(const_cast<LPWSTR>(wsParent.data()));
+	if (!PathFileExists(wsParent.c_str())) {
+		BOOL stat = _RecursiveCreateDirectory(wsParent);
+		if (!stat) return stat;
+	}
+	return CreateDirectory(wsPath.c_str(), NULL);
+}
+
+
 bool CollectionInterface::_is_dir_writable(const std::wstring& path)
 {
-	std::wstring tmpFileName = path;
-	_wsDeleteTrailingNulls(tmpFileName);
-	tmpFileName += L"\\~$TMPFILE.PRYRT";
+	// first grab the directory and make sure it exists
+	std::wstring cleanFilePath = path;
+	_wsDeleteTrailingNulls(cleanFilePath);
+
+	if (!PathFileExists(cleanFilePath.c_str())) {
+		BOOL stat = _RecursiveCreateDirectory(cleanFilePath);
+		if (!stat) {
+			DWORD errNum = GetLastError();
+			if (errNum != ERROR_ACCESS_DENIED) {
+				std::wstring errmsg = L"Could not find or create directory for \"" + path + L"\": " + std::to_wstring(GetLastError()) + L"\n";
+				::MessageBox(NULL, errmsg.c_str(), L"Directory error", MB_ICONERROR);
+			}
+			return false;
+		}
+	}
+
+	// then create the tempfile name, and see if it is writable
+	std::wstring tmpFileName = cleanFilePath + L"\\~$TMPFILE.PRYRT";
 
 	HANDLE hFile = CreateFile(tmpFileName.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
@@ -429,6 +473,8 @@ bool CollectionInterface::_is_dir_writable(const std::wstring& path)
 		}
 		return false;
 	}
+
+	// cleanup
 	CloseHandle(hFile);
 	DeleteFile(tmpFileName.c_str());
 	return true;
@@ -478,7 +524,6 @@ std::wstring CollectionInterface::getWritableTempDir(void)
 	return tempDir;
 }
 
-#include <Shlwapi.h>
 bool CollectionInterface::ask_overwrite_if_exists(const std::wstring& path)
 {
 	if (!PathFileExists(path.c_str())) return true;	// if file doesn't exist, it's okay to "overwrite" nothing ;-)
