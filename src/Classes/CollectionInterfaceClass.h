@@ -59,6 +59,7 @@ private:
 	std::string _xml_unentity(const std::string& text);
 	std::wstring& _wsDeleteTrailingNulls(std::wstring& text);
 	bool _is_dir_writable(const std::wstring& path);
+	BOOL _RecursiveCreateDirectory(std::wstring wsPath);
 
 	// Npp Metadata
 	void _populateNppDirs(void);
