@@ -60,6 +60,7 @@ private:
 	std::wstring& _wsDeleteTrailingNulls(std::wstring& text);
 	bool _is_dir_writable(const std::wstring& path);
 	BOOL _RecursiveCreateDirectory(std::wstring wsPath);
+	std::wstring _askSettingsDir(void);
 
 	// Npp Metadata
 	void _populateNppDirs(void);
