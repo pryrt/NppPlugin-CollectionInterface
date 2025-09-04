@@ -23,6 +23,10 @@
     <ClCompile Include="..\src\DockingFeature\StaticDialog.cpp">
       <Filter>Template</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Classes\NppMetaClass.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pcjHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Dialogs\AboutDialog.h">
@@ -86,6 +90,10 @@
     <ClInclude Include="..\src\DockingFeature\Window.h">
       <Filter>Template</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Classes\NppMetaClass.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pcjHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\CollectionInterface.rc" />
