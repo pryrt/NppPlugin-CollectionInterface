@@ -7,7 +7,7 @@
 #include <wininet.h>
 #include <pathcch.h>
 #include "PluginDefinition.h"
-
+#include "NppMetaClass.h"
 
 class CollectionInterface {
 public:
@@ -26,26 +26,15 @@ public:
 	std::vector<std::wstring> vThemeFiles;
 
 	// Methods
-	//std::vector<char> downloadFileInMemory(const std::string& url);
 	std::vector<char> downloadFileInMemory(const std::wstring& url);
-	//bool downloadFileToDisk(const std::string& url, const std::string& path);
-	//bool downloadFileToDisk(const std::wstring& url, const std::string& path);
-	//bool downloadFileToDisk(const std::string& url, const std::wstring& path);
 	bool downloadFileToDisk(const std::wstring& url, const std::wstring& path);
 	bool getListsFromJson(void);
 
-	// getter methods
-	std::wstring nppCfgDir(void) { return _nppCfgDir; };
-	std::wstring nppCfgUdlDir(void) { return _nppCfgUdlDir; };
-	std::wstring nppCfgFunctionListDir(void) { return _nppCfgFunctionListDir; };
-	std::wstring nppCfgAutoCompletionDir(void) { return _nppCfgAutoCompletionDir; };
-	std::wstring nppCfgThemesDir(void) { return _nppCfgThemesDir; };
-
 	// status methods
-	bool isUdlDirWritable(void) { return _is_dir_writable(_nppCfgUdlDir); };
-	bool isFunctionListDirWritable(void) { return _is_dir_writable(_nppCfgFunctionListDir); };
-	bool isAutoCompletionDirWritable(void) { return _is_dir_writable(_nppCfgAutoCompletionDir); };
-	bool isThemesDirWritable(void) { return _is_dir_writable(_nppCfgThemesDir); };
+	bool isUdlDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgUdl); };
+	bool isFunctionListDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgFunctionList); };
+	bool isAutoCompletionDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgAutoCompletion); };
+	bool isThemesDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgThemes); };
 	bool areListsPopulated(void) { return _areListsPopulated; };
 
 	// if the chosen directory isn't writable, need to be able to use a directory that _is_ writable
@@ -60,17 +49,5 @@ private:
 	std::wstring& _wsDeleteTrailingNulls(std::wstring& text);
 	bool _is_dir_writable(const std::wstring& path);
 	BOOL _RecursiveCreateDirectory(std::wstring wsPath);
-	std::wstring _askSettingsDir(void);
-
-	// Npp Metadata
-	void _populateNppDirs(void);
-	std::wstring
-		_nppCfgDir,
-		_nppCfgUdlDir,
-		_nppCfgFunctionListDir,
-		_nppCfgAutoCompletionDir,
-		_nppCfgThemesDir;
-
-	HWND _hwndNPP;
 	bool _areListsPopulated;
 };
