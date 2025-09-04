@@ -2,6 +2,7 @@
 // nlohmann/json.hpp
 #include "json.hpp"
 #include <Shlwapi.h>
+#include "NppMetaClass.h"
 
 // private
 void delNull(std::wstring& str)
@@ -13,6 +14,7 @@ void delNull(std::wstring& str)
 }
 
 CollectionInterface::CollectionInterface(HWND hwndNpp) {
+	gNppMetaInfo.populate();
 	_hwndNPP = hwndNpp;
 	_populateNppDirs();
 	_areListsPopulated = getListsFromJson();

@@ -28,6 +28,7 @@
 #include <vector>
 #include <CommCtrl.h>
 #include <Shlwapi.h>
+#include "NppMetaClass.h"
 
 
 HWND g_hwndCIDlg = nullptr, g_hwndCIHlpDlg = nullptr;
@@ -109,17 +110,17 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 
 			// Dark Mode Subclass and Theme: needs to go _after_ all the controls have been initialized
-			LRESULT nppVersion = ::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 1, 0);	// HIWORD(nppVersion) = major version; LOWORD(nppVersion) = zero-padded minor (so 8|500 will come after 8|410)
-			LRESULT darkdialogVersion = MAKELONG(540, 8);		// NPPM_GETDARKMODECOLORS requires 8.4.1 and NPPM_DARKMODESUBCLASSANDTHEME requires 8.5.4
-			LRESULT localsubclassVersion = MAKELONG(810, 8);	// from 8.540 to 8.810 (at least), need to do local subclassing because of tab control
+			gNppMetaInfo.populate();
+			LRESULT darkdialogVersion = gNppMetaInfo.verDotToLL(8, 5, 4, 0);	// requires 8.5.4.0 for NPPM_DARKMODESUBCLASSANDTHEME (NPPM_GETDARKMODECOLORS was 8.4.1, so covered)
+			LRESULT localsubclassVersion = gNppMetaInfo.verDotToLL(8, 8, 1, 0);	// from 8.540 to 8.810, need to do local subclassing because of tab control
 			g_IsDarkMode = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
-			if (g_IsDarkMode && (nppVersion >= darkdialogVersion)) {
+			if (g_IsDarkMode && gNppMetaInfo.isNppVerAtLeast(darkdialogVersion)) {
 				::SendMessage(nppData._nppHandle, NPPM_GETDARKMODECOLORS, sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(&myColors));
 				myBrushes.change(myColors);
 				myPens.change(myColors);
 
 				// in older N++, need to subclass the tab control myself, because NPPM_DARKMODESUBCLASSANDTHEME doesn't apply to SysTabControl32 from 8.5.4 (when introduced) to 8.8.1 (at least); hopefully, 8.8.2 will have that fixed
-				if (nppVersion <= localsubclassVersion) {
+				if (gNppMetaInfo.isNppVerAtLeast(localsubclassVersion)) {
 					::SetWindowSubclass(GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL), cbTabSubclass, g_ci_dark_subclass, 0);
 				}
 
