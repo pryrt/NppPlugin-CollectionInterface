@@ -50,4 +50,6 @@ private:
 	bool _is_dir_writable(const std::wstring& path);
 	BOOL _RecursiveCreateDirectory(std::wstring wsPath);
 	bool _areListsPopulated;
+
+	// TODO: see if trailing nulls, is-writable, and recursive-create can be replaced by pcjHelper instances
 };
