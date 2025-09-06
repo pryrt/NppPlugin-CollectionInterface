@@ -57,7 +57,7 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 		::MessageBox(gNppMetaInfo.hwnd._nppHandle, errmsg.c_str(), L"Download Error", MB_ICONERROR);
 		return false;
 	}
-	_wsDeleteTrailingNulls(expandedPath);
+	pcjHelper::delNull(expandedPath);
 
 	// don't download and overwrite the file if it already exists
 	if (!ask_overwrite_if_exists(expandedPath)) {
@@ -371,98 +371,43 @@ bool CollectionInterface::getListsFromJson(void)
 	return true;
 }
 
-std::wstring& CollectionInterface::_wsDeleteTrailingNulls(std::wstring& str)
-{
-	str.resize(lstrlen(str.c_str()));
-	return str;
-}
-
-BOOL CollectionInterface::_RecursiveCreateDirectory(std::wstring wsPath)
-{
-	std::wstring wsParent = wsPath;
-	PathRemoveFileSpec(const_cast<LPWSTR>(wsParent.data()));
-	if (!PathFileExists(wsParent.c_str())) {
-		BOOL stat = _RecursiveCreateDirectory(wsParent);
-		if (!stat) return stat;
-	}
-	return CreateDirectory(wsPath.c_str(), NULL);
-}
-
-
-bool CollectionInterface::_is_dir_writable(const std::wstring& path)
-{
-	// first grab the directory and make sure it exists
-	std::wstring cleanFilePath = path;
-	_wsDeleteTrailingNulls(cleanFilePath);
-
-	if (!PathFileExists(cleanFilePath.c_str())) {
-		BOOL stat = _RecursiveCreateDirectory(cleanFilePath);
-		if (!stat) {
-			DWORD errNum = GetLastError();
-			if (errNum != ERROR_ACCESS_DENIED) {
-				std::wstring errmsg = L"Could not find or create directory for \"" + path + L"\": " + std::to_wstring(GetLastError()) + L"\n";
-				::MessageBox(NULL, errmsg.c_str(), L"Directory error", MB_ICONERROR);
-			}
-			return false;
-		}
-	}
-
-	// then create the tempfile name, and see if it is writable
-	std::wstring tmpFileName = cleanFilePath + L"\\~$TMPFILE.PRYRT";
-
-	HANDLE hFile = CreateFile(tmpFileName.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE) {
-		DWORD errNum = GetLastError();
-		if (errNum != ERROR_ACCESS_DENIED) {
-			std::wstring errmsg = L"Error when testing if \"" + path + L"\" is writeable: " + std::to_wstring(GetLastError()) + L"\n";
-			::MessageBox(NULL, errmsg.c_str(), L"Directory error", MB_ICONERROR);
-		}
-		return false;
-	}
-
-	// cleanup
-	CloseHandle(hFile);
-	DeleteFile(tmpFileName.c_str());
-	return true;
-}
-
 std::wstring CollectionInterface::getWritableTempDir(void)
 {
 	// first try the system TEMP
 	std::wstring tempDir(MAX_PATH + 1, L'\0');
 	GetTempPath(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
-	_wsDeleteTrailingNulls(tempDir);
+	pcjHelper::delNull(tempDir);
 
 	// if that fails, try c:\tmp or c:\temp
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir = L"c:\\temp";
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir = L"c:\\tmp";
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
 
 	// if that fails, try the %USERPROFILE%
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir.resize(MAX_PATH + 1);
 		if (!ExpandEnvironmentStrings(L"%USERPROFILE%", const_cast<LPWSTR>(tempDir.data()), MAX_PATH + 1)) {
 			std::wstring errmsg = L"getWritableTempDir::ExpandEnvirontmentStrings(%USERPROFILE%) failed: " + std::to_wstring(GetLastError()) + L"\n";
 			::MessageBox(NULL, errmsg.c_str(), L"Directory Error", MB_ICONERROR);
 			return L"";
 		}
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
 
 	// last try: current directory
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir.resize(MAX_PATH + 1);
 		GetCurrentDirectory(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
 
 	// if that fails, no other ideas
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		std::wstring errmsg = L"getWritableTempDir() cannot find any writable directory; please make sure %TEMP% is defined and writable\n";
 		::MessageBox(NULL, errmsg.c_str(), L"Directory Error", MB_ICONERROR);
 		return L"";

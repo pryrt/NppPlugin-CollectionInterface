@@ -31,10 +31,10 @@ public:
 	bool getListsFromJson(void);
 
 	// status methods
-	bool isUdlDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgUdl); };
-	bool isFunctionListDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgFunctionList); };
-	bool isAutoCompletionDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgAutoCompletion); };
-	bool isThemesDirWritable(void) { return _is_dir_writable(gNppMetaInfo.dir.cfgThemes); };
+	bool isUdlDirWritable(void) { return pcjHelper::is_dir_writable(gNppMetaInfo.dir.cfgUdl); };
+	bool isFunctionListDirWritable(void) { return pcjHelper::is_dir_writable(gNppMetaInfo.dir.cfgFunctionList); };
+	bool isAutoCompletionDirWritable(void) { return pcjHelper::is_dir_writable(gNppMetaInfo.dir.cfgAutoCompletion); };
+	bool isThemesDirWritable(void) { return pcjHelper::is_dir_writable(gNppMetaInfo.dir.cfgThemes); };
 	bool areListsPopulated(void) { return _areListsPopulated; };
 
 	// if the chosen directory isn't writable, need to be able to use a directory that _is_ writable
@@ -46,10 +46,5 @@ public:
 
 private:
 	std::string _xml_unentity(const std::string& text);
-	std::wstring& _wsDeleteTrailingNulls(std::wstring& text);
-	bool _is_dir_writable(const std::wstring& path);
-	BOOL _RecursiveCreateDirectory(std::wstring wsPath);
 	bool _areListsPopulated;
-
-	// TODO: see if trailing nulls, is-writable, and recursive-create can be replaced by pcjHelper instances
 };
