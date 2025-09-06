@@ -29,6 +29,7 @@
   <ItemGroup>
     <ClInclude Include="..\src\Classes\CollectionInterfaceClass.h" />
     <ClInclude Include="..\src\Classes\json.hpp" />
+    <ClInclude Include="..\src\Classes\NppMetaClass.h" />
     <ClInclude Include="..\src\Dialogs\AboutDialog.h" />
     <ClInclude Include="..\src\Dialogs\CollectionInterfaceDialog.h" />
     <ClInclude Include="..\src\Dialogs\resource.h" />
@@ -44,6 +45,7 @@
     <ClInclude Include="..\src\menuCmdID.h" />
     <ClInclude Include="..\src\Notepad_plus_msgs.h" />
     <ClInclude Include="..\src\NPP_DarkMode.h" />
+    <ClInclude Include="..\src\pcjHelper.h" />
     <ClInclude Include="..\src\PluginDefinition.h" />
     <ClInclude Include="..\src\PluginInterface.h" />
     <ClInclude Include="..\src\Scintilla.h" />
@@ -51,12 +53,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Classes\CollectionInterfaceClass.cpp" />
+    <ClCompile Include="..\src\Classes\NppMetaClass.cpp" />
     <ClCompile Include="..\src\Dialogs\AboutDialog.cpp" />
     <ClCompile Include="..\src\Dialogs\CollectionInterfaceDialog.cpp" />
     <ClCompile Include="..\src\DockingFeature\GoToLineDlg.cpp" />
     <ClCompile Include="..\src\DockingFeature\StaticDialog.cpp" />
     <ClCompile Include="..\src\CollectionInterface.cpp" />
     <ClCompile Include="..\src\Hyperlinks.cpp" />
+    <ClCompile Include="..\src\pcjHelper.cpp" />
     <ClCompile Include="..\src\PluginDefinition.cpp" />
   </ItemGroup>
   <ItemGroup>

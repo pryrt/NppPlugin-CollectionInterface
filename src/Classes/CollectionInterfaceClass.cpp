@@ -12,127 +12,24 @@ void delNull(std::wstring& str)
 	}
 }
 
-CollectionInterface::CollectionInterface(HWND hwndNpp) {
-	_hwndNPP = hwndNpp;
-	_populateNppDirs();
+CollectionInterface::CollectionInterface(HWND /*hwndNpp*/) {
+	gNppMetaInfo.populate();
 	_areListsPopulated = getListsFromJson();
 };
-
-void CollectionInterface::_populateNppDirs(void) {
-	// Start by grabbing the directory where notepad++.exe resides
-	std::wstring exeDir(MAX_PATH, '\0');
-	::SendMessage(_hwndNPP, NPPM_GETNPPDIRECTORY, MAX_PATH, reinterpret_cast<LPARAM>(exeDir.data()));
-	delNull(exeDir);
-
-	// %AppData%\Notepad++\Plugins\Config or equiv
-	LRESULT sz = 1 + ::SendMessage(_hwndNPP, NPPM_GETPLUGINSCONFIGDIR, 0, NULL);
-	std::wstring pluginCfgDir(sz, '\0');
-	::SendMessage(_hwndNPP, NPPM_GETPLUGINSCONFIGDIR, sz, reinterpret_cast<LPARAM>(pluginCfgDir.data()));
-	delNull(pluginCfgDir);
-
-	// %AppData%\Notepad++\Plugins or equiv
-	//		since it's removing the tail, it will never be longer than pluginCfgDir; since it's in-place, initialize with the first
-	std::wstring pluginDir = pluginCfgDir;
-	PathCchRemoveFileSpec(const_cast<PWSTR>(pluginDir.data()), pluginCfgDir.size());
-	delNull(pluginDir);
-
-	// %AppData%\Notepad++ or equiv is what I'm really looking for
-	// _nppCfgDir				#py# _nppConfigDirectory = os.path.dirname(os.path.dirname(notepad.getPluginConfigDir()))
-	_nppCfgDir = pluginDir;
-	PathCchRemoveFileSpec(const_cast<PWSTR>(_nppCfgDir.data()), pluginDir.size());
-	delNull(_nppCfgDir);
-
-	std::wstring appDataOrPortableDir = _nppCfgDir;
-
-	// %AppData%\FunctionList: FunctionList folder DOES NOT work in Cloud or SettingsDir, so set to the AppData|Portable
-	// _nppCfgFunctionListDir	#py# _nppCfgFunctionListDirectory = os.path.join(_nppConfigDirectory, 'functionList')
-	_nppCfgFunctionListDir = appDataOrPortableDir + L"\\functionList";
-
-	// CloudDirectory: if Notepad++ has cloud enabled, need to use that for some config files
-	bool usesCloud = false;
-	sz = ::SendMessage(_hwndNPP, NPPM_GETSETTINGSONCLOUDPATH, 0, 0);	// get number of wchars in settings-on-cloud path (0 means settings-on-cloud is disabled)
-	if (sz) {
-		usesCloud = true;
-		std::wstring wsCloudDir(sz + 1, '\0');
-		LRESULT szGot = ::SendMessage(_hwndNPP, NPPM_GETSETTINGSONCLOUDPATH, sz + 1, reinterpret_cast<LPARAM>(wsCloudDir.data()));
-		if (szGot == sz) {
-			delNull(wsCloudDir);
-			_nppCfgDir = wsCloudDir;
-		}
-	}
-
-	// -settingsDir: if command-line option is enabled, use that directory for some config files
-	bool usesSettingsDir = false;
-	std::wstring wsSettingsDir = _askSettingsDir();
-	if (wsSettingsDir.length() > 0)
-	{
-		usesSettingsDir = true;
-		_nppCfgDir = wsSettingsDir;
-	}
-
-	// UDL and Themes are both relative to AppData _or_ Cloud _or_ SettingsDir, so they should be set _after_ updating _nppCfgDir.
-
-	// _nppCfgUdlDir			#py# _nppCfgUdlDirectory = os.path.join(_nppConfigDirectory, 'userDefineLangs')
-	_nppCfgUdlDir = _nppCfgDir + L"\\userDefineLangs";
-
-	// _nppCfgThemesDir			#py# _nppCfgThemesDirectory = os.path.join(_nppConfigDirectory, 'themes')
-	_nppCfgThemesDir = (usesSettingsDir ? appDataOrPortableDir : _nppCfgDir) + L"\\themes";
-
-	// AutoCompletion is _always_ relative to notepad++.exe, never in AppData or CloudConfig or SettingsDir
-	// _nppCfgAutoCompletionDir	#py# _nppAppAutoCompletionDirectory = os.path.join(notepad.getNppDir(), 'autoCompletion')
-	_nppCfgAutoCompletionDir = exeDir + L"\\autoCompletion";
-
-	return;
-}
-
-// Parse the -settingsDir out of the current command line
-//	FUTURE: if a future version of N++ includes PR#16946, then do an "if version>vmin, use new message" section in the code
-std::wstring CollectionInterface::_askSettingsDir(void)
-{
-	LRESULT sz = ::SendMessage(_hwndNPP, NPPM_GETCURRENTCMDLINE, 0, 0);
-	if (!sz) return L"";
-	std::wstring strCmdLine(sz + 1, L'\0');
-	LRESULT got = ::SendMessage(_hwndNPP, NPPM_GETCURRENTCMDLINE, sz + 1, reinterpret_cast<LPARAM>(strCmdLine.data()));
-	if (got != sz) return L"";
-	delNull(strCmdLine);
-
-	std::wstring wsSettingsDir = L"";
-	size_t p = 0;
-	if ((p=strCmdLine.find(L"-settingsDir=")) != std::wstring::npos) {
-		std::wstring wsEnd = L" " ;
-		// start by grabbing from after the = to the end of the string
-		wsSettingsDir = strCmdLine.substr(p+13, strCmdLine.length() - p - 13);
-		if (wsSettingsDir[0] == L'"') {
-			wsSettingsDir = wsSettingsDir.substr(1, wsSettingsDir.length() - 1);
-			wsEnd = L"\"";
-		}
-		p = wsSettingsDir.find(wsEnd);
-		if (p != std::wstring::npos) {
-			// found the ending space or quote, so do everything _before_ that (need last position=p-1, which means a count of p)
-			wsSettingsDir = wsSettingsDir.substr(0, p);
-		}
-		else if (wsEnd == L"\"") {
-			// could not find end quote; should probably throw an error or something, but for now, just pretend I found nothing...
-			return L"";
-		}	// none found and looking for space means it found end-of-string, which is fine with the space separator
-	}
-
-	return wsSettingsDir;
-}
 
 std::vector<char> CollectionInterface::downloadFileInMemory(const std::wstring& url)
 {
 	HINTERNET hInternet = InternetOpen(L"CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL) {
 		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
-		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		::MessageBox(gNppMetaInfo.hwnd._nppHandle, errmsg.c_str(), L"Download Error", MB_ICONERROR);
 		return std::vector<char>();
 	}
 
 	HINTERNET hConnect = InternetOpenUrl(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
 	if (hConnect == NULL) {
 		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
-		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		::MessageBox(gNppMetaInfo.hwnd._nppHandle, errmsg.c_str(), L"Download Error", MB_ICONERROR);
 		return std::vector<char>();
 	}
 
@@ -157,10 +54,10 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 	std::wstring expandedPath(dwExSize, L'\0');
 	if (!ExpandEnvironmentStrings(path.c_str(), const_cast<LPWSTR>(expandedPath.data()), dwExSize)) {
 		std::wstring errmsg = L"Could not understand the path \"" + path + L"\": " + std::to_wstring(GetLastError()) + L"\n";
-		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		::MessageBox(gNppMetaInfo.hwnd._nppHandle, errmsg.c_str(), L"Download Error", MB_ICONERROR);
 		return false;
 	}
-	_wsDeleteTrailingNulls(expandedPath);
+	pcjHelper::delNull(expandedPath);
 
 	// don't download and overwrite the file if it already exists
 	if (!ask_overwrite_if_exists(expandedPath)) {
@@ -171,14 +68,14 @@ bool CollectionInterface::downloadFileToDisk(const std::wstring& url, const std:
 	HINTERNET hInternet = InternetOpen(L"CollectionInterfacePluginForN++", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hInternet == NULL) {
 		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
-		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		::MessageBox(gNppMetaInfo.hwnd._nppHandle, errmsg.c_str(), L"Download Error", MB_ICONERROR);
 		return false;
 	}
 
 	HINTERNET hConnect = InternetOpenUrl(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
 	if (hConnect == NULL) {
 		std::wstring errmsg = L"Could not connect to internet when trying to download\r\n" + url;
-		::MessageBox(_hwndNPP, errmsg.c_str(), L"Download Error", MB_ICONERROR);
+		::MessageBox(gNppMetaInfo.hwnd._nppHandle, errmsg.c_str(), L"Download Error", MB_ICONERROR);
 		if (hInternet) InternetCloseHandle(hInternet);	// need to free hInternet if hConnect failed
 		return false;
 	}
@@ -323,7 +220,7 @@ bool CollectionInterface::getListsFromJson(void)
 			msg.resize(100);
 			msg += "\n...";
 		}
-		::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Download Problems", MB_ICONWARNING);
+		::MessageBoxA(gNppMetaInfo.hwnd._nppHandle, msg.c_str(), "CollectionInterface: Download Problems", MB_ICONWARNING);
 		didThemeFail = true;
 	}
 	else {
@@ -338,12 +235,12 @@ bool CollectionInterface::getListsFromJson(void)
 		}
 		catch (nlohmann::json::exception& e) {
 			std::string msg = std::string("JSON Error in Theme data: ") + e.what();
-			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
+			::MessageBoxA(gNppMetaInfo.hwnd._nppHandle, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
 			didThemeFail = true;
 		}
 		catch (std::exception& e) {
 			std::string msg = std::string("Unrecognized Error in Theme data: ") + e.what();
-			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
+			::MessageBoxA(gNppMetaInfo.hwnd._nppHandle, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
 			didThemeFail = true;
 		}
 	}
@@ -366,7 +263,7 @@ bool CollectionInterface::getListsFromJson(void)
 			msg += "\n...";
 		}
 		if (!didThemeFail)
-			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Download Problems", MB_ICONWARNING);
+			::MessageBoxA(gNppMetaInfo.hwnd._nppHandle, msg.c_str(), "CollectionInterface: Download Problems", MB_ICONWARNING);
 		return false;	// without UDL info, it's not worth displaying the Download Dialog
 	}
 	else {
@@ -460,12 +357,12 @@ bool CollectionInterface::getListsFromJson(void)
 		}
 		catch (nlohmann::json::exception& e) {
 			std::string msg = std::string("JSON Error in UDL data: ") + e.what();
-			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
+			::MessageBoxA(gNppMetaInfo.hwnd._nppHandle, msg.c_str(), "CollectionInterface: JSON Error", MB_ICONERROR);
 			return false;	// without UDL info, it's not worth displaying the Download Dialog
 		}
 		catch (std::exception& e) {
 			std::string msg = std::string("Unrecognized Error in UDL data: ") + e.what();
-			::MessageBoxA(_hwndNPP, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
+			::MessageBoxA(gNppMetaInfo.hwnd._nppHandle, msg.c_str(), "CollectionInterface: Unrecognized Error", MB_ICONERROR);
 			return false;	// without UDL info, it's not worth displaying the Download Dialog
 		}
 	}
@@ -474,98 +371,43 @@ bool CollectionInterface::getListsFromJson(void)
 	return true;
 }
 
-std::wstring& CollectionInterface::_wsDeleteTrailingNulls(std::wstring& str)
-{
-	str.resize(lstrlen(str.c_str()));
-	return str;
-}
-
-BOOL CollectionInterface::_RecursiveCreateDirectory(std::wstring wsPath)
-{
-	std::wstring wsParent = wsPath;
-	PathRemoveFileSpec(const_cast<LPWSTR>(wsParent.data()));
-	if (!PathFileExists(wsParent.c_str())) {
-		BOOL stat = _RecursiveCreateDirectory(wsParent);
-		if (!stat) return stat;
-	}
-	return CreateDirectory(wsPath.c_str(), NULL);
-}
-
-
-bool CollectionInterface::_is_dir_writable(const std::wstring& path)
-{
-	// first grab the directory and make sure it exists
-	std::wstring cleanFilePath = path;
-	_wsDeleteTrailingNulls(cleanFilePath);
-
-	if (!PathFileExists(cleanFilePath.c_str())) {
-		BOOL stat = _RecursiveCreateDirectory(cleanFilePath);
-		if (!stat) {
-			DWORD errNum = GetLastError();
-			if (errNum != ERROR_ACCESS_DENIED) {
-				std::wstring errmsg = L"Could not find or create directory for \"" + path + L"\": " + std::to_wstring(GetLastError()) + L"\n";
-				::MessageBox(NULL, errmsg.c_str(), L"Directory error", MB_ICONERROR);
-			}
-			return false;
-		}
-	}
-
-	// then create the tempfile name, and see if it is writable
-	std::wstring tmpFileName = cleanFilePath + L"\\~$TMPFILE.PRYRT";
-
-	HANDLE hFile = CreateFile(tmpFileName.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE) {
-		DWORD errNum = GetLastError();
-		if (errNum != ERROR_ACCESS_DENIED) {
-			std::wstring errmsg = L"Error when testing if \"" + path + L"\" is writeable: " + std::to_wstring(GetLastError()) + L"\n";
-			::MessageBox(NULL, errmsg.c_str(), L"Directory error", MB_ICONERROR);
-		}
-		return false;
-	}
-
-	// cleanup
-	CloseHandle(hFile);
-	DeleteFile(tmpFileName.c_str());
-	return true;
-}
-
 std::wstring CollectionInterface::getWritableTempDir(void)
 {
 	// first try the system TEMP
 	std::wstring tempDir(MAX_PATH + 1, L'\0');
 	GetTempPath(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
-	_wsDeleteTrailingNulls(tempDir);
+	pcjHelper::delNull(tempDir);
 
 	// if that fails, try c:\tmp or c:\temp
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir = L"c:\\temp";
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir = L"c:\\tmp";
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
 
 	// if that fails, try the %USERPROFILE%
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir.resize(MAX_PATH + 1);
 		if (!ExpandEnvironmentStrings(L"%USERPROFILE%", const_cast<LPWSTR>(tempDir.data()), MAX_PATH + 1)) {
 			std::wstring errmsg = L"getWritableTempDir::ExpandEnvirontmentStrings(%USERPROFILE%) failed: " + std::to_wstring(GetLastError()) + L"\n";
 			::MessageBox(NULL, errmsg.c_str(), L"Directory Error", MB_ICONERROR);
 			return L"";
 		}
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
 
 	// last try: current directory
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		tempDir.resize(MAX_PATH + 1);
 		GetCurrentDirectory(MAX_PATH + 1, const_cast<LPWSTR>(tempDir.data()));
-		_wsDeleteTrailingNulls(tempDir);
+		pcjHelper::delNull(tempDir);
 	}
 
 	// if that fails, no other ideas
-	if (!_is_dir_writable(tempDir)) {
+	if (!pcjHelper::is_dir_writable(tempDir)) {
 		std::wstring errmsg = L"getWritableTempDir() cannot find any writable directory; please make sure %TEMP% is defined and writable\n";
 		::MessageBox(NULL, errmsg.c_str(), L"Directory Error", MB_ICONERROR);
 		return L"";
@@ -577,6 +419,6 @@ bool CollectionInterface::ask_overwrite_if_exists(const std::wstring& path)
 {
 	if (!PathFileExists(path.c_str())) return true;	// if file doesn't exist, it's okay to "overwrite" nothing ;-)
 	std::wstring msg = L"The path\r\n" + path + L"\r\nalready exists.  Should I overwrite it?";
-	int ans = ::MessageBox(_hwndNPP, msg.c_str(), L"Overwrite File?", MB_YESNO);
+	int ans = ::MessageBox(gNppMetaInfo.hwnd._nppHandle, msg.c_str(), L"Overwrite File?", MB_YESNO);
 	return ans == IDYES;
 }

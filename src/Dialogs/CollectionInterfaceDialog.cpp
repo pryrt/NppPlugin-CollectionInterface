@@ -28,6 +28,7 @@
 #include <vector>
 #include <CommCtrl.h>
 #include <Shlwapi.h>
+#include "NppMetaClass.h"
 
 
 HWND g_hwndCIDlg = nullptr, g_hwndCIHlpDlg = nullptr;
@@ -109,17 +110,17 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			_populate_file_cbx(hwndDlg, pobjCI->mapUDL, pobjCI->mapDISPLAY);
 
 			// Dark Mode Subclass and Theme: needs to go _after_ all the controls have been initialized
-			LRESULT nppVersion = ::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 1, 0);	// HIWORD(nppVersion) = major version; LOWORD(nppVersion) = zero-padded minor (so 8|500 will come after 8|410)
-			LRESULT darkdialogVersion = MAKELONG(540, 8);		// NPPM_GETDARKMODECOLORS requires 8.4.1 and NPPM_DARKMODESUBCLASSANDTHEME requires 8.5.4
-			LRESULT localsubclassVersion = MAKELONG(810, 8);	// from 8.540 to 8.810 (at least), need to do local subclassing because of tab control
+			gNppMetaInfo.populate();
+			LRESULT darkdialogVersion = gNppMetaInfo.verDotToLL(8, 5, 4, 0);	// requires 8.5.4.0 for NPPM_DARKMODESUBCLASSANDTHEME (NPPM_GETDARKMODECOLORS was 8.4.1, so covered)
+			LRESULT localsubclassVersion = gNppMetaInfo.verDotToLL(8, 8, 1, 0);	// from 8.540 to 8.810, need to do local subclassing because of tab control
 			g_IsDarkMode = (bool)::SendMessage(nppData._nppHandle, NPPM_ISDARKMODEENABLED, 0, 0);
-			if (g_IsDarkMode && (nppVersion >= darkdialogVersion)) {
+			if (g_IsDarkMode && gNppMetaInfo.isNppVerAtLeast(darkdialogVersion)) {
 				::SendMessage(nppData._nppHandle, NPPM_GETDARKMODECOLORS, sizeof(NppDarkMode::Colors), reinterpret_cast<LPARAM>(&myColors));
 				myBrushes.change(myColors);
 				myPens.change(myColors);
 
 				// in older N++, need to subclass the tab control myself, because NPPM_DARKMODESUBCLASSANDTHEME doesn't apply to SysTabControl32 from 8.5.4 (when introduced) to 8.8.1 (at least); hopefully, 8.8.2 will have that fixed
-				if (nppVersion <= localsubclassVersion) {
+				if (gNppMetaInfo.isNppVerAtLeast(localsubclassVersion)) {
 					::SetWindowSubclass(GetDlgItem(g_hwndCIDlg, IDC_CI_TABCTRL), cbTabSubclass, g_ci_dark_subclass, 0);
 				}
 
@@ -304,7 +305,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								wsURL = pobjCI->mapUDL[ws_id_name];
 							}
 
-							wsPath = pobjCI->nppCfgUdlDir() + L"\\" + ws_id_name + L".xml";
+							wsPath = gNppMetaInfo.dir.cfgUdl + L"\\" + ws_id_name + L".xml";
 							isWritable = pobjCI->isUdlDirWritable();
 
 							// if chkAC, then also download AC
@@ -314,7 +315,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								alsoDownload[L"AC"][L"URL"] = pobjCI->mapAC[ws_id_name];
 								size_t posLastSlash = alsoDownload[L"AC"][L"URL"].rfind(L'/');
 								std::wstring acName = (posLastSlash == std::wstring::npos) ? (ws_id_name + L".xml") : (alsoDownload[L"AC"][L"URL"].substr(posLastSlash + 1));
-								alsoDownload[L"AC"][L"PATH"] = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
+								alsoDownload[L"AC"][L"PATH"] = gNppMetaInfo.dir.cfgAutoCompletion  + L"\\" + acName;
 								extraWritable[L"AC"] = pobjCI->isAutoCompletionDirWritable();
 								total++;
 							}
@@ -324,7 +325,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 							isEN = IsWindowEnabled(GetDlgItem(hwndDlg, IDC_CI_CHK_ALSO_FL));
 							if (isEN && isCHK && pobjCI->mapFL.count(ws_id_name)) {
 								alsoDownload[L"FL"][L"URL"] = pobjCI->mapFL[ws_id_name];
-								alsoDownload[L"FL"][L"PATH"] = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
+								alsoDownload[L"FL"][L"PATH"] = gNppMetaInfo.dir.cfgFunctionList + L"\\" + ws_id_name + L".xml";
 								extraWritable[L"FL"] = pobjCI->isFunctionListDirWritable();
 								total++;
 							}
@@ -340,7 +341,7 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								}
 							}
 
-							wsPath = pobjCI->nppCfgAutoCompletionDir() + L"\\" + acName;
+							wsPath = gNppMetaInfo.dir.cfgAutoCompletion + L"\\" + acName;
 							isWritable = pobjCI->isAutoCompletionDirWritable();
 						}
 						else if (wsCategory == L"FunctionList") {
@@ -348,13 +349,13 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								wsURL = pobjCI->mapFL[ws_id_name];
 							}
 
-							wsPath = pobjCI->nppCfgFunctionListDir() + L"\\" + ws_id_name + L".xml";
+							wsPath = gNppMetaInfo.dir.cfgFunctionList + L"\\" + ws_id_name + L".xml";
 							isWritable = pobjCI->isFunctionListDirWritable();
 						}
 						else if (wsCategory == L"Theme") {
 							wsURL = L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + wsFilename;
 
-							wsPath = pobjCI->nppCfgThemesDir() + L"\\" + wsFilename;
+							wsPath = gNppMetaInfo.dir.cfgThemes + L"\\" + wsFilename;
 							isWritable = pobjCI->isThemesDirWritable();
 						}
 
