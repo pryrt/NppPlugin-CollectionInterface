@@ -17,14 +17,14 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define VERSION_NUM				1,1,0,2
+#define VERSION_NUM				1,1,0,3
 #define VERSION_LINEAR			100
 #define VERSION_LINEAR_TEXT		TEXT(VERSION_LINEAR)
 #define VERSION_STRING			"1.1.0"
 //								// VERSION_TEXT This must match the tag pushed on the server minus the "v"
 #define VERSION_TEXT			TEXT(VERSION_STRING)
 //								// VERSION_STAGE				// "-alpha", "-beta", "-dev", ""
-#define VERSION_STAGE			"-dev2"
+#define VERSION_STAGE			"-dev3"
 #define VERSION_STAGE_WS		TEXT(VERSION_STAGE)
 #define VERSION_NAME			"CollectionInterface"
 #define VERSION_NAME_WS			TEXT(VERSION_NAME)

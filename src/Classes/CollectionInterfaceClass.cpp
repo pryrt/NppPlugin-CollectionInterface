@@ -274,12 +274,13 @@ bool CollectionInterface::getListsFromJson(void)
 			for (const auto& item : jUdl["UDLs"].items()) {
 				auto j = item.value();
 				std::wstring ws_id_name = string2wstring(j["id-name"].get<std::string>());
+				std::wstring ws_display_name = string2wstring(j["display-name"].get<std::string>());
 				std::wstring udl_base = L"https://raw.githubusercontent.com/notepad-plus-plus/userDefinedLanguages/master/";
 
 				// Logic for UDL -> URL
 				if (j.contains("repository")) {
 					std::wstring sUDL = L"";
-					if (j["repository"].is_boolean()) {		// URL repo should never be boolean; but if it is, generate default URL
+					if (j["repository"].is_boolean()) {		// URL repo should never be boolean; but if it is, generate default URL (doesn't matter whether true or false, need a URL either way)
 						sUDL = udl_base + L"UDLs/" + ws_id_name + L".xml";
 					}
 					if (j["repository"].is_string()) {
@@ -312,9 +313,12 @@ bool CollectionInterface::getListsFromJson(void)
 				// Logic for functionList -> URL
 				if (j.contains("functionList")) {
 					std::wstring wsFuncList = L"";
+					// if functionList boolean=True, generate filename from ID
 					if (j["functionList"].is_boolean() && j["functionList"].get<bool>()) {
 						wsFuncList = udl_base + L"functionList/" + ws_id_name + L".xml";
 					}
+					// if functionList boolean=False, don't need a wsFuncList entry, so leave as "" with no IF statement
+					// if functionList is string, use that string for URL or filename, as appropriate.
 					if (j["functionList"].is_string()) {
 						std::wstring ws = string2wstring(j["functionList"].get<std::string>());
 
@@ -335,9 +339,12 @@ bool CollectionInterface::getListsFromJson(void)
 				// Logic for autoCompletion -> URL
 				if (j.contains("autoCompletion")) {
 					std::wstring wsAutoComp = L"";
-					if (j["autoCompletion"].is_boolean()) {
-						wsAutoComp = udl_base + L"autoCompletion/" + ws_id_name + L".xml";
+					// if boolean=True, generate name from DISPLAY name
+					if (j["autoCompletion"].is_boolean() && j["autoCompletion"].get<bool>()) {
+						wsAutoComp = udl_base + L"autoCompletion/" + ws_display_name + L".xml";
 					}
+					// if boolean=False, don't need wsAutoComp defined at all..., so no IF needed
+					// if string, extract the value and check for URL vs repo
 					if (j["autoCompletion"].is_string()) {
 						std::wstring ws = string2wstring(j["autoCompletion"].get<std::string>());
 						if (ws.find(L"http") == 0) {
