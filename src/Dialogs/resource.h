@@ -26,6 +26,7 @@
 #define IDD_ABOUTDLG                            101
 #define IDC_VERSION                             1001
 #define IDC_GITHUB                              1002
+#define IDC_ABOUT_TINYXML2                      1003
 
 // CollectionInterface Dialog
 #define IDD_COLLECTIONINTERFACEDLG              102

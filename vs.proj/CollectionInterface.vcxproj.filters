@@ -14,9 +14,6 @@
     <ClCompile Include="..\src\DockingFeature\GoToLineDlg.cpp">
       <Filter>Ignore</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Hyperlinks.cpp">
-      <Filter>Libraries</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\PluginDefinition.cpp">
       <Filter>Template</Filter>
     </ClCompile>
@@ -26,7 +23,18 @@
     <ClCompile Include="..\src\Classes\NppMetaClass.cpp">
       <Filter>Classes</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\pcjHelper.cpp" />
+    <ClCompile Include="..\src\lib\tinyxml2.cpp">
+      <Filter>Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lib\Hyperlinks.cpp">
+      <Filter>Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lib\pcjHelper.cpp">
+      <Filter>Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Classes\OverrideMapUpdaterClass.cpp">
+      <Filter>Classes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Dialogs\AboutDialog.h">
@@ -60,9 +68,6 @@
     <ClInclude Include="..\src\DockingFeature\GoToLineDlg.h">
       <Filter>Ignore</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Hyperlinks.h">
-      <Filter>Libraries</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\menuCmdID.h">
       <Filter>Template</Filter>
     </ClInclude>
@@ -93,7 +98,18 @@
     <ClInclude Include="..\src\Classes\NppMetaClass.h">
       <Filter>Classes</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\pcjHelper.h" />
+    <ClInclude Include="..\src\lib\tinyxml2.h">
+      <Filter>Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lib\Hyperlinks.h">
+      <Filter>Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lib\pcjHelper.h">
+      <Filter>Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Classes\OverrideMapUpdaterClass.h">
+      <Filter>Classes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\CollectionInterface.rc" />

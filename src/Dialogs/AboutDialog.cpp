@@ -68,6 +68,7 @@ INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 			// however, it overwrites the ConverStaticToHyperlink, so I need to go back and do that _after_ the message
 			ConvertStaticToHyperlink(hwndDlg, IDC_GITHUB);
+			ConvertStaticToHyperlink(hwndDlg, IDC_ABOUT_TINYXML2);
 
 			//// Finally, figure out where to draw the dialog, and draw it.
 			RECT rc;
@@ -99,9 +100,9 @@ INT_PTR CALLBACK abtDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 				case IDC_GITHUB:
 					ShellExecute(hwndDlg, TEXT("open"), TEXT(VERSION_URL), NULL, NULL, SW_SHOWNORMAL);
 					return true;
-					//case IDC_README:
-					//	ShellExecute(hwndDlg, TEXT("open"), TEXT("https://github.com/dail8859/DoxyIt/blob/v") VERSION_TEXT TEXT("/README.md"), NULL, NULL, SW_SHOWNORMAL);
-					//	return true;
+				case IDC_ABOUT_TINYXML2:
+					ShellExecute(hwndDlg, TEXT("open"), TEXT("https://github.com/leethomason/tinyxml2"), NULL, NULL, SW_SHOWNORMAL);
+					return true;
 			}
 		}
 		case WM_DESTROY:

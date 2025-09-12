@@ -39,4 +39,5 @@ BEGIN
     LTEXT           "This code is licensed under GPLv3", IDC_STATIC, 60, 60, 200, 8, SS_LEFT
     LTEXT           "Libraries:", IDC_STATIC, 20, 77, 37, 8, SS_LEFT, WS_EX_LEFT
     LTEXT           "Hyperlinks = Copyright 2002 Neal Stublen", IDC_STATIC, 60, 77, 200, 8, SS_LEFT
+    LTEXT           "tinyxml2 = Lee Thomason {github:/leethomason/tinyxml2}", IDC_ABOUT_TINYXML2, 60, 87, 200, 8, SS_LEFT
 END
