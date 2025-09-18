@@ -59,10 +59,9 @@ OverrideMapUpdater::OverrideMapUpdater(void)
 		pAssociationMap->InsertEndChild(
 			pOverrideMapXML->NewComment(" ==================== User Defined Languages ============================ ")
 		);
+		
 
-		tinyxml2::XMLElement* pAssoc = pAssociationMap->InsertNewChildElement("association");
-		pAssoc->SetAttribute("id", "nppexec.xml");
-		pAssoc->SetAttribute("userDefinedLangName", "NppExec");
+		/*tinyxml2::XMLElement* pAssoc =*/ add_udl_assoc("nppexec.xml", "NppExec");
 	}
 	else {
 		// TODO: !!! NEED TO ADD ERROR CHECKING !!!
@@ -74,7 +73,30 @@ OverrideMapUpdater::OverrideMapUpdater(void)
 	}
 }
 
+// add an <association> tag for a given UDL
+//		converts wstring to string first
+tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::wstring wsFilename, std::wstring wsUDLname)
+{
+	return add_udl_assoc(
+		pcjHelper::wstring_to_utf8(wsFilename),
+		pcjHelper::wstring_to_utf8(wsUDLname)
+	);
+}
+
+// add an <association> tag for a given UDL
+tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::string sFilename, std::string sUDLname)
+{
+	tinyxml2::XMLElement* pAssoc = pAssociationMap->InsertNewChildElement("association");
+	if (pAssoc) {
+		pAssoc->SetAttribute("id", sFilename.c_str());
+		pAssoc->SetAttribute("userDefinedLangName", sUDLname.c_str());
+	}
+	return pAssoc;
+}
+
 bool OverrideMapUpdater::experiment(void)
 {
-	return false;
+	add_udl_assoc("fake.xml", "FakeUDL");
+	pOverrideMapXML->SaveFile(sOverMapPath().c_str());
+	return true;
 }

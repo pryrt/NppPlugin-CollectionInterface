@@ -20,6 +20,10 @@ public:
 	// Experiment with concepts needed, might eventually morph into actual behavior
 	bool experiment(void);
 
+	// add an <association> tag for a given UDL
+	tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::wstring wsFilename, std::wstring wsUDLname);
+	tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::string sFilename, std::string sUDLname);
+
 	// getters
 	std::wstring wsOverMapPath(void) { return _wsOverMapPath; }
 	std::string sOverMapPath(void) { return pcjHelper::wstring_to_utf8(_wsOverMapPath); }
