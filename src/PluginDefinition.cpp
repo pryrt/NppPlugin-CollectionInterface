@@ -20,8 +20,11 @@
 #include "PluginDefinition.h"
 #include "menuCmdID.h"
 #include "resource.h"
+#include "Version.h"
 #include "AboutDialog.h"
 #include "CollectionInterfaceDialog.h"
+#include "NppMetaClass.h"
+#include "OverrideMapUpdaterClass.h"
 
 static HANDLE _hModule;
 
@@ -34,6 +37,11 @@ FuncItem funcItem[nbFunc];
 // The data of Notepad++ that you can use in your plugin commands
 //
 NppData nppData;
+
+//
+// Instantiate global NppMetaInfo object, passing in name of plugin
+//
+NppMetaInfo gNppMetaInfo(VERSION_NAME_WS);
 
 //
 // Initialize your plugin data here
@@ -67,12 +75,10 @@ void commandMenuInit()
     //            bool check0nInit                // optional. Make this menu item be checked visually
     //            );
     setCommand(0, TEXT("Collection Interface: Download"), showCollectionInterface, NULL, false);
-    setCommand(1, TEXT("Help: Download"), showCIDownloadHelp, NULL, false);
-    setCommand(2, TEXT(""), NULL, NULL, false);
-    //setCommand(3, TEXT("About (NonModal)"), showAbout, NULL, false);
-    setCommand(3, TEXT("About"), showAboutModal, NULL, false);
-    //setCommand(5, TEXT("Hello Notepad++"), hello, NULL, false);
-    //setCommand(6, TEXT("Hello (with dialog)"), helloDlg, NULL, false);
+    setCommand(1, TEXT("Collection Interface:: Experiment"), hello, NULL, false);
+    setCommand(2, TEXT("Help: Download"), showCIDownloadHelp, NULL, false);
+    setCommand(3, TEXT(""), NULL, NULL, false);
+    setCommand(4, TEXT("About"), showAboutModal, NULL, false);
 }
 
 //
@@ -108,19 +114,8 @@ bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey 
 //----------------------------------------------//
 void hello()
 {
-    // Open a new document
-    ::SendMessage(nppData._nppHandle, NPPM_MENUCOMMAND, 0, IDM_FILE_NEW);
-
-    // Get the current scintilla
-    int which = -1;
-    ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&which);
-    if (which == -1)
-        return;
-    HWND curScintilla = (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
-
-    // Say hello now :
-    // Scintilla control has no Unicode mode, so we use (char *) here
-    ::SendMessage(curScintilla, SCI_SETTEXT, 0, (LPARAM)"Hello, Notepad++!");
+    OverrideMapUpdater overMapUpdater;
+    overMapUpdater.experiment();
 }
 
 void helloDlg()

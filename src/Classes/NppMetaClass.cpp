@@ -1,12 +1,10 @@
 #include "NppMetaClass.h"
 #include <pathcch.h>
 #include <shlwapi.h>
+#include "Version.h"
 
-// Global NppMetaInfo object
-NppMetaInfo gNppMetaInfo;
-
-NppMetaInfo::NppMetaInfo(void)
-	: hwnd(nppData)
+NppMetaInfo::NppMetaInfo(std::wstring wsPluginName)
+	: hwnd(nppData), _wsPluginName(wsPluginName)
 {
 	_isInitialized = false;
 	dir = { L"", L"", L"", L"", L"", L"", L"", L"", L"", L"", L"" };
@@ -49,7 +47,7 @@ void NppMetaInfo::populate(void)
 	::SendMessage(hwnd._nppHandle, NPPM_GETPLUGINSCONFIGDIR, sz, reinterpret_cast<LPARAM>(pluginCfgDir.data()));
 	pcjHelper::delNull(pluginCfgDir);
 	dir.cfgPluginConfig = pluginCfgDir;
-	dir.cfgPluginConfigMyDir = pluginCfgDir + L"\\ConfigUpdater";
+	dir.cfgPluginConfigMyDir = pluginCfgDir + L"\\" + _wsPluginName;
 
 	// %AppData%\Notepad++\Plugins or equiv
 	//		since it's removing the tail, it will never be longer than pluginCfgDir; since it's in-place, initialize with the first

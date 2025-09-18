@@ -7,7 +7,7 @@
 class NppMetaInfo {
 public:
 	// constructor
-	NppMetaInfo(void);
+	NppMetaInfo(std::wstring wsPluginName);
 
 	// Run this in the constructor for any class that uses it
 	// (internally tracks whether it's been populated already, and doesn't duplicate effort)
@@ -17,17 +17,17 @@ public:
 
 	struct {
 		std::wstring
-			app,
-			appDataEquiv,
-			appThemes,
-			appExePath,
-			cfg,
-			cfgPluginConfig,
-			cfgPluginConfigMyDir,
-			cfgUdl,
-			cfgFunctionList,
-			cfgAutoCompletion,
-			cfgThemes;
+			app,						// directory where the executable is found
+			appDataEquiv,				// %AppData% or .app, ignoring Cloud or -settingsDir
+			appThemes,					// .app\Themes\ subfolder (alternate themes always under .app\ directory)
+			appExePath,					// .app\notepad++.exe == "path\to\notepad++.exe" (includes .exe file)
+			cfg,						// SettingsDir >> CloudDir >> AppData(equiv)
+			cfgPluginConfig,			// .appDataEquiv\plugins\Config
+			cfgPluginConfigMyDir,		// .appDataEquiv\plugins\Config\wsPluginName
+			cfgUdl,						// .cfg\userDefinedLangs\ subdir (SettingsDir >> Cloud Dir >> Portable >> AppData(equiv))
+			cfgFunctionList,			// .appDataEquiv\functionList\ subdir (skip Cloud or -settingsDir)
+			cfgAutoCompletion,			// .app\autoCompletion\ subdir
+			cfgThemes;					// .cfg\Themes\ subfoloder (SettingsDir >> Cloud Dir >> Portable >> AppData(equiv))
 	} dir;
 
 	////////////////////////////////
@@ -53,6 +53,7 @@ public:
 private:
 	bool _isInitialized;
 	std::wstring _askSettingsDir(void);
+	std::wstring _wsPluginName;
 };
 
 // make sure everyone who can see this class can see the global instance
