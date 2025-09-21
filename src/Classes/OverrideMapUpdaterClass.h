@@ -28,6 +28,12 @@ public:
 	std::vector<tinyxml2::XMLElement*> OverrideMapUpdater::add_udl_assoc(std::map<std::wstring, std::wstring> mwsUdls);
 	std::vector<tinyxml2::XMLElement*> OverrideMapUpdater::add_udl_assoc(std::map<std::string, std::string> msUdls);
 
+	// save the underlying overrideMap.xml
+	tinyxml2::XMLError OverrideMapUpdater::saveFile(void) { return pOverrideMapXML->SaveFile(sOverMapPath().c_str()); }
+
+	// TODO: !!!error handling on all XML processing!!!
+
+
 	// getters
 	std::wstring wsOverMapPath(void) { return _wsOverMapPath; }
 	std::string sOverMapPath(void) { return pcjHelper::wstring_to_utf8(_wsOverMapPath); }
