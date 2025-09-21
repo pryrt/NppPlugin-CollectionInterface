@@ -24,6 +24,10 @@ public:
 	tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::wstring wsFilename, std::wstring wsUDLname);
 	tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::string sFilename, std::string sUDLname);
 
+	// add <association> tags for each filename,udl pair in the map
+	std::vector<tinyxml2::XMLElement*> OverrideMapUpdater::add_udl_assoc(std::map<std::wstring, std::wstring> mwsUdls);
+	std::vector<tinyxml2::XMLElement*> OverrideMapUpdater::add_udl_assoc(std::map<std::string, std::string> msUdls);
+
 	// getters
 	std::wstring wsOverMapPath(void) { return _wsOverMapPath; }
 	std::string sOverMapPath(void) { return pcjHelper::wstring_to_utf8(_wsOverMapPath); }

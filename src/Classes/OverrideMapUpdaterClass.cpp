@@ -46,14 +46,16 @@ OverrideMapUpdater::OverrideMapUpdater(void)
 		pAssociationMap = pFunctionList->InsertNewChildElement("associationMap");
 
 		pAssociationMap->InsertEndChild(
-			pOverrideMapXML->NewComment("\r\n"
-				"\t\t\tSee https://github.com/notepad-plus-plus/notepad-plus-plus/blob/master/PowerEditor/installer/functionList/overrideMap.xml for the \"official\" default for this file\r\n"
-				"\t\t\t\tincluding the default id-vs-langID values\r\n"
-				"\r\n"
-				"\t\t\tEach functionlist parse rule links to a language ID(\"langID\") or a UDL name.\r\n"
-				"\t\t\tExamples:\r\n"
-				"\t\t\t\t<association id=\"my_perl.xml\" langID=\"21\" />\r\n"
-				"\t\t\t\t<association id=\"nppexec.xml\" userDefinedLangName=\"NppExec\" />\r\n"
+			pOverrideMapXML->NewComment(
+				"            \n"
+				"            See https://github.com/notepad-plus-plus/notepad-plus-plus/blob/master/PowerEditor/installer/functionList/overrideMap.xml for the \"official\" default for this file\n"
+				"                tincluding the default id-vs-langID values\n"
+				"            \n"
+				"            Each functionlist parse rule links to a language ID(\"langID\") or a UDL name.\n"
+				"            Examples:\n"
+				"                <association id=\"my_perl.xml\" langID=\"21\" />\n"
+				"                <association id=\"nppexec.xml\" userDefinedLangName=\"NppExec\" />\n"
+				"            "
 			)
 		);
 		pAssociationMap->InsertEndChild(
@@ -94,9 +96,36 @@ tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::string sFilename, s
 	return pAssoc;
 }
 
+// add <association> tags for each filename,udl pair in the map
+std::vector<tinyxml2::XMLElement*> OverrideMapUpdater::add_udl_assoc(std::map<std::string, std::string> msUdls)
+{
+	std::vector<tinyxml2::XMLElement*> vpAssoc;
+	for (const auto& pair : msUdls) {
+		vpAssoc.push_back(add_udl_assoc(pair.first, pair.second));
+	}
+	return vpAssoc;
+}
+
+// add <association> tags for each filename,udl pair in the map
+std::vector<tinyxml2::XMLElement*> OverrideMapUpdater::add_udl_assoc(std::map<std::wstring, std::wstring> mwsUdls)
+{
+	std::vector<tinyxml2::XMLElement*> vpAssoc;
+	for (const auto& pair : mwsUdls) {
+		vpAssoc.push_back(add_udl_assoc(pair.first, pair.second));
+	}
+	return vpAssoc;
+}
+
 bool OverrideMapUpdater::experiment(void)
 {
 	add_udl_assoc("fake.xml", "FakeUDL");
+	std::map<std::wstring, std::wstring> myMap = {
+		{L"udl1.xml", L"UDL 1"},
+		{L"udl2.xml", L"UDL 2"},
+		{L"udl3.xml", L"UDL 3"}
+	};
+	add_udl_assoc(myMap);
 	pOverrideMapXML->SaveFile(sOverMapPath().c_str());
+
 	return true;
 }
