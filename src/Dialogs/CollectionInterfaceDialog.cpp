@@ -29,6 +29,7 @@
 #include <CommCtrl.h>
 #include <Shlwapi.h>
 #include "NppMetaClass.h"
+#include "OverrideMapUpdaterClass.h"
 
 
 HWND g_hwndCIDlg = nullptr, g_hwndCIHlpDlg = nullptr;
@@ -252,8 +253,10 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				}
 				case IDC_CI_BTN_DOWNLOAD:
 				{
+					bool doAskOverrideMap = false, doUpdateOverrideMap = false;
 					std::wstring wsCategory = _get_tab_category_wstr(hwndDlg, IDC_CI_TABCTRL);
 					HWND hwLBFile = GetDlgItem(hwndDlg, IDC_CI_COMBO_FILE);
+					OverrideMapUpdater* pobjOvMapUpdater = nullptr;
 
 					// prepare for N selections
 					std::vector<int> vBuf;
@@ -326,8 +329,11 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 							if (isEN && isCHK && pobjCI->mapFL.count(ws_id_name)) {
 								alsoDownload[L"FL"][L"URL"] = pobjCI->mapFL[ws_id_name];
 								alsoDownload[L"FL"][L"PATH"] = gNppMetaInfo.dir.cfgFunctionList + L"\\" + ws_id_name + L".xml";
+								alsoDownload[L"FL"][L"DISPLAY"] = wsFilename;
 								extraWritable[L"FL"] = pobjCI->isFunctionListDirWritable();
 								total++;
+								// if there are any FunctionList files, need to ask about overrideMap.xml
+								doAskOverrideMap = true;
 							}
 						}
 						else if (wsCategory == L"AutoCompletion") {
@@ -351,6 +357,9 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 							wsPath = gNppMetaInfo.dir.cfgFunctionList + L"\\" + ws_id_name + L".xml";
 							isWritable = pobjCI->isFunctionListDirWritable();
+
+							// if there are any FunctionList files, need to ask about overrideMap.xml
+							doAskOverrideMap = true;
 						}
 						else if (wsCategory == L"Theme") {
 							wsURL = L"https://raw.githubusercontent.com/notepad-plus-plus/nppThemes/main/themes/" + wsFilename;
@@ -359,19 +368,31 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 							isWritable = pobjCI->isThemesDirWritable();
 						}
 
+						// ask about override map, but only once per **DOWNLOAD** click
+						if (doAskOverrideMap && !doUpdateOverrideMap) {
+							std::wstring msg = L"You are downloading one or more FunctionList files.\r\n\r\nWould you like to update your overrideMap.xml to reference the new file(s)?";
+							int iMB_ret = ::MessageBox(hwndDlg, msg.c_str(), L"Update overrideMap?", MB_YESNO);
+							doUpdateOverrideMap = (iMB_ret == IDYES);
+							if (doUpdateOverrideMap)
+								pobjOvMapUpdater = new OverrideMapUpdater;
+						}
+
 						int count = 0;
 						if (isWritable) {
 							// download directly to the final destination
 							didDownload |= pobjCI->downloadFileToDisk(wsURL, wsPath);
-							std::wstring msg = L"Downloaded to " + wsPath;
-							//::MessageBox(hwndDlg, msg.c_str(), L"Download Successful", MB_OK);
 							count++;
+
+							// For FL downloads, need to add the association here if overrideMap-updating is enabled
+							if (doUpdateOverrideMap && (wsCategory == L"FunctionList"))
+								pobjOvMapUpdater->add_udl_assoc(ws_id_name + L".xml", wsFilename);
 						}
 						else {
 							// check if it needs to be overwritten before elevating permissions
 							if (pobjCI->ask_overwrite_if_exists(wsPath)) {
 								mapUacDelayed[wsURL] = wsPath;
 								total--;
+								// TODO: need to add a delayed-FL-ov map as well
 							}
 							else {
 								total--;
@@ -397,11 +418,20 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 									pobjCI->downloadFileToDisk(xURL, xPath);
 									count++;
 									didDownload = true;
+
+									// For xtra[FL], need to add the association here if overrideMap-updating is enabled
+									if (doUpdateOverrideMap && (category == L"FL"))
+									{
+										std::wstring xDisp = alsoDownload[category][L"DISPLAY"];
+										pobjOvMapUpdater->add_udl_assoc(ws_id_name + L".xml", xDisp);
+									}
+
 								}
 								else {
 									if (pobjCI->ask_overwrite_if_exists(xPath)) {
 										mapUacDelayed[xURL] = xPath;
 										total--;
+										// TODO: need to add a delayed-FL-ov map as well
 									}
 									else {
 										total--;
@@ -464,9 +494,18 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
 							swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
 							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+
+							if (doUpdateOverrideMap)
+								pobjOvMapUpdater->add_udl_assoc(mapUacDelayed);
+
 						}
 					}
 
+					if (doUpdateOverrideMap) {
+						// need to save the overrideMap.xml at the end, whether
+						// it's been updating the XML one-at-a-time, or delayed until the end
+						pobjOvMapUpdater->saveFile();
+					}
 					return true;
 				}
 				case IDC_CI_HELPBTN:
