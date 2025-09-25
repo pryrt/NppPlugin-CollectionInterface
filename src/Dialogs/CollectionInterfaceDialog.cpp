@@ -377,15 +377,16 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								pobjOvMapUpdater = new OverrideMapUpdater;
 						}
 
+						// For FL downloads, need to add the association here if overrideMap-updating is enabled
+						if (doUpdateOverrideMap && (wsCategory == L"FunctionList"))
+							pobjOvMapUpdater->add_udl_assoc(ws_id_name + L".xml", wsFilename);
+
+						// do the main download if writable, or add it to the queue if not
 						int count = 0;
 						if (isWritable) {
 							// download directly to the final destination
 							didDownload |= pobjCI->downloadFileToDisk(wsURL, wsPath);
 							count++;
-
-							// For FL downloads, need to add the association here if overrideMap-updating is enabled
-							if (doUpdateOverrideMap && (wsCategory == L"FunctionList"))
-								pobjOvMapUpdater->add_udl_assoc(ws_id_name + L".xml", wsFilename);
 						}
 						else {
 							// check if it needs to be overwritten before elevating permissions
@@ -418,14 +419,6 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 									pobjCI->downloadFileToDisk(xURL, xPath);
 									count++;
 									didDownload = true;
-
-									// For xtra[FL], need to add the association here if overrideMap-updating is enabled
-									if (doUpdateOverrideMap && (category == L"FL"))
-									{
-										std::wstring xDisp = alsoDownload[category][L"DISPLAY"];
-										pobjOvMapUpdater->add_udl_assoc(ws_id_name + L".xml", xDisp);
-									}
-
 								}
 								else {
 									if (pobjCI->ask_overwrite_if_exists(xPath)) {
@@ -437,6 +430,14 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 										total--;
 									}
 								}
+
+								// For xtra[FL], need to add the association here if overrideMap-updating is enabled
+								if (doUpdateOverrideMap && (category == L"FL"))
+								{
+									std::wstring xDisp = alsoDownload[category][L"DISPLAY"];
+									pobjOvMapUpdater->add_udl_assoc(ws_id_name + L".xml", xDisp);
+								}
+
 							}
 							// update progress bar
 							if (total < 1) total = 1;
@@ -462,11 +463,14 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 					if (mapUacDelayed.size()) {
 						int total = static_cast<int>(mapUacDelayed.size()) + 1;			// want one extra "slot" for the MOVE command
+						if (doUpdateOverrideMap) total++;								// want an extra entry for the overrideMap.xml
 						int count = 0;
 						std::wstring wsAsk = L"Cannot write the following files:";
 						for (const auto& pair : mapUacDelayed) {
 							wsAsk += std::wstring(L"\n") + pair.second;
 						}
+						if (doUpdateOverrideMap)
+							wsAsk += std::wstring(L"\n") + pobjOvMapUpdater->wsOverMapPath();
 						wsAsk += L"\n\nI will download temporary files, and then try to copy them to the right location with elevated UAC permission.  (The OS may prompt you for UAC.)";
 						int ans = ::MessageBox(hwndDlg, wsAsk.c_str(), L"Need Directory Permission", MB_OKCANCEL);
 						if (ans == IDOK) {
@@ -488,16 +492,29 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
 							}
 
+							// need to add the override map to the list of UAC commands
+							if (doUpdateOverrideMap) {
+								std::wstring tmpOvM = pobjCI->getWritableTempDir() + L"\\~$TMPFILE.UPDATED.overrideMap.xml";
+								pobjOvMapUpdater->saveFile(tmpOvM);
+								
+								args += L"MOVE /Y \"" + tmpOvM + L"\" \"" + pobjOvMapUpdater->wsOverMapPath() + L"\" & ";
+
+								++count;
+
+								::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100 * count / total, 0);
+								swprintf_s(wcDLPCT, L"Downloading %d%%", 100 * count / total);
+								Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
+
+								// don't want to try to write a second time, below, so set false
+								doUpdateOverrideMap = false;
+							}
+
 							//::MessageBox(hwndDlg, (std::wstring(L"cmd.exe ") + args).c_str(), L"TODO: UAC Command", MB_OK);
 							ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
 
 							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
 							swprintf_s(wcDLPCT, L"Downloading %d%% [DONE]", 100);
 							Edit_SetText(GetDlgItem(hwndDlg, IDC_CI_PROGRESSLBL), wcDLPCT);
-
-							if (doUpdateOverrideMap)
-								pobjOvMapUpdater->add_udl_assoc(mapUacDelayed);
-
 						}
 					}
 
