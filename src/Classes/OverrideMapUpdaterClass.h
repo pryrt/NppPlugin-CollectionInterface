@@ -30,9 +30,6 @@ public:
 	tinyxml2::XMLError OverrideMapUpdater::saveFile(std::string sNewPath) { return pOverrideMapXML->SaveFile(sNewPath.c_str()); }
 	tinyxml2::XMLError OverrideMapUpdater::saveFile(std::wstring wsNewPath) { return pOverrideMapXML->SaveFile(pcjHelper::wstring_to_utf8(wsNewPath).c_str()); }
 
-	// TODO: !!!error handling on all XML processing!!!
-
-
 	// getters
 	std::wstring wsOverMapPath(void) { return _wsOverMapPath; }
 	std::string sOverMapPath(void) { return pcjHelper::wstring_to_utf8(_wsOverMapPath); }

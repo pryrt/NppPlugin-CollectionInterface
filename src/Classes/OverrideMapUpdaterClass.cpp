@@ -229,7 +229,7 @@ bool OverrideMapUpdater::_xml_check_result(tinyxml2::XMLError a_eResult, tinyxml
 				::SendMessageA(curScintilla, SCI_ANNOTATIONSETTEXT, zeroLine, reinterpret_cast<LPARAM>(p_doc->ErrorStr()));
 
 				// need to stop
-				// TODO: DO I NEED?? _doAbort = true;
+				// In ConfigUpdater, I needed to set `_doAbort = true;` to exit out of a loop, but that's needed in CollectionInterface
 			};
 		}
 		return true;
