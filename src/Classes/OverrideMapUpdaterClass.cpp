@@ -66,12 +66,27 @@ OverrideMapUpdater::OverrideMapUpdater(void)
 		/*tinyxml2::XMLElement* pAssoc =*/ add_udl_assoc("nppexec.xml", "NppExec");
 	}
 	else {
-		// TODO: !!! NEED TO ADD ERROR CHECKING !!!
 		// load file and extract the main elements
-		/*tinyxml2::XMLError eResult =*/ pOverrideMapXML->LoadFile(sOverMapPath().c_str());
+		tinyxml2::XMLError eResult = pOverrideMapXML->LoadFile(sOverMapPath().c_str());
+		if(_xml_check_result(eResult, pOverrideMapXML, wsOverMapPath())) return;
+
 		pRoot = pOverrideMapXML->FirstChildElement("NotepadPlus");
+		if (!pRoot) {
+			_xml_check_result(tinyxml2::XML_ERROR_PARSING, pOverrideMapXML, wsOverMapPath());
+			return;
+		}
+
 		pFunctionList = pRoot->FirstChildElement("functionList");
+		if (!pFunctionList) {
+			_xml_check_result(tinyxml2::XML_ERROR_PARSING, pOverrideMapXML, wsOverMapPath());
+			return;
+		}
+
 		pAssociationMap = pFunctionList->FirstChildElement("associationMap");
+		if (!pAssociationMap) {
+			_xml_check_result(tinyxml2::XML_ERROR_PARSING, pOverrideMapXML, wsOverMapPath());
+			return;
+		}
 	}
 }
 
@@ -120,20 +135,6 @@ std::vector<tinyxml2::XMLElement*> OverrideMapUpdater::add_udl_assoc(std::map<st
 		vpAssoc.push_back(add_udl_assoc(pair.first, pair.second));
 	}
 	return vpAssoc;
-}
-
-bool OverrideMapUpdater::experiment(void)
-{
-	add_udl_assoc("fake.xml", "FakeUDL");
-	std::map<std::wstring, std::wstring> myMap = {
-		{L"udl1.xml", L"UDL 1"},
-		{L"udl2.xml", L"UDL 2"},
-		{L"udl3.xml", L"UDL 3"}
-	};
-	add_udl_assoc(myMap);
-	pOverrideMapXML->SaveFile(sOverMapPath().c_str());
-
-	return true;
 }
 
 // private: case-insensitive std::string equality check
@@ -194,3 +195,44 @@ tinyxml2::XMLElement* OverrideMapUpdater::_find_element_with_attribute_value(tin
 	}
 	return pFoundElement;
 }
+
+
+// compares the XMLError result to XML_SUCCESS, and returns a TRUE boolean to indicate failure
+//		p_doc defaults to nullptr, wsFilePath to L""
+bool OverrideMapUpdater::_xml_check_result(tinyxml2::XMLError a_eResult, tinyxml2::XMLDocument* p_doc, std::wstring wsFilePath)
+{
+	if (a_eResult != tinyxml2::XML_SUCCESS) {
+		std::string sMsg = std::string("XML Error #") + std::to_string(static_cast<int>(a_eResult));
+		if (p_doc != NULL) {
+			sMsg += std::string(": ") + std::string(p_doc->ErrorStr());
+			if (p_doc->ErrorLineNum()) {
+				sMsg += "\n\nI will try to open the file near that error.";
+			}
+		}
+		::MessageBoxA(NULL, sMsg.c_str(), "XML Error", MB_ICONWARNING | MB_OK);
+		if (p_doc != NULL && p_doc->ErrorLineNum() && wsFilePath.size()) {
+			if (::SendMessage(gNppMetaInfo.hwnd._nppHandle, NPPM_DOOPEN, 0, reinterpret_cast<LPARAM>(wsFilePath.c_str()))) {
+				extern NppData nppData;	// not in PluginDefinition.h
+
+				// Get the current scintilla
+				int which = -1;
+				::SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&which);
+				HWND curScintilla = (which < 1) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
+
+				// SCI_GOTOLINE in the current scintilla instance
+				WPARAM zeroLine = static_cast<WPARAM>(p_doc->ErrorLineNum() - 1);
+				::SendMessage(curScintilla, SCI_GOTOLINE, zeroLine, 0);
+
+				// do annotation
+				::SendMessage(curScintilla, SCI_ANNOTATIONCLEARALL, 0, 0);
+				::SendMessage(curScintilla, SCI_ANNOTATIONSETVISIBLE, ANNOTATION_BOXED, 0);
+				::SendMessageA(curScintilla, SCI_ANNOTATIONSETTEXT, zeroLine, reinterpret_cast<LPARAM>(p_doc->ErrorStr()));
+
+				// need to stop
+				// TODO: DO I NEED?? _doAbort = true;
+			};
+		}
+		return true;
+	}
+	return false;
+};

@@ -17,9 +17,6 @@ public:
 	// Instantiate OverrideMapUpdater object
 	OverrideMapUpdater(void);
 
-	// Experiment with concepts needed, might eventually morph into actual behavior
-	bool experiment(void);
-
 	// add an <association> tag for a given UDL
 	tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::wstring wsFilename, std::wstring wsUDLname);
 	tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::string sFilename, std::string sUDLname);
@@ -47,6 +44,10 @@ private:
 
 	// look for an element, based on {Parent, FirstChild, or both} which is of a specific ElementType, having a specific AttributeName with specific AttributeValue
 	tinyxml2::XMLElement* _find_element_with_attribute_value(tinyxml2::XMLElement* pParent, tinyxml2::XMLElement* pFirst, std::string sElementType, std::string sAttributeName, std::string sAttributeValue, bool caseSensitive);
+
+	// compares the XMLError result to XML_SUCCESS, and returns a TRUE boolean to indicate failure
+	//		p_doc defaults to nullptr, wsFilePath to L""
+	bool OverrideMapUpdater::_xml_check_result(tinyxml2::XMLError a_eResult, tinyxml2::XMLDocument* p_doc = nullptr, std::wstring wsFilePath = std::wstring(L""));
 
 	////////////////
 	// properties

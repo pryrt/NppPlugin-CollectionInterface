@@ -75,10 +75,9 @@ void commandMenuInit()
     //            bool check0nInit                // optional. Make this menu item be checked visually
     //            );
     setCommand(0, TEXT("Collection Interface: Download"), showCollectionInterface, NULL, false);
-    setCommand(1, TEXT("Collection Interface:: Experiment"), hello, NULL, false);
-    setCommand(2, TEXT("Help: Download"), showCIDownloadHelp, NULL, false);
-    setCommand(3, TEXT(""), NULL, NULL, false);
-    setCommand(4, TEXT("About"), showAboutModal, NULL, false);
+    setCommand(1, TEXT("Help: Download"), showCIDownloadHelp, NULL, false);
+    setCommand(2, TEXT(""), NULL, NULL, false);
+    setCommand(3, TEXT("About"), showAboutModal, NULL, false);
 }
 
 //
@@ -114,8 +113,6 @@ bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey 
 //----------------------------------------------//
 void hello()
 {
-    OverrideMapUpdater overMapUpdater;
-    overMapUpdater.experiment();
 }
 
 void helloDlg()
