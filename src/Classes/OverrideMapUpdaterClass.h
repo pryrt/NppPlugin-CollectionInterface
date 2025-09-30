@@ -41,7 +41,16 @@ public:
 	std::string sOverMapPath(void) { return pcjHelper::wstring_to_utf8(_wsOverMapPath); }
 
 private:
+	////////////////
+	// methods
+	////////////////
+
+	// look for an element, based on {Parent, FirstChild, or both} which is of a specific ElementType, having a specific AttributeName with specific AttributeValue
+	tinyxml2::XMLElement* _find_element_with_attribute_value(tinyxml2::XMLElement* pParent, tinyxml2::XMLElement* pFirst, std::string sElementType, std::string sAttributeName, std::string sAttributeValue, bool caseSensitive);
+
+	////////////////
 	// properties
+	////////////////
 
 	// paths
 	std::wstring _wsOverMapPath;		// <cfg>\functionList\overrideMap.xml path, or <exe> version

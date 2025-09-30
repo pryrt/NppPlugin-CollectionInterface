@@ -86,8 +86,14 @@ tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::wstring wsFilename,
 }
 
 // add an <association> tag for a given UDL
+//		(skip if already exists)
 tinyxml2::XMLElement* OverrideMapUpdater::add_udl_assoc(std::string sFilename, std::string sUDLname)
 {
+	// first check if the UDL already exists in the <association> structure
+	tinyxml2::XMLElement* pExist = _find_element_with_attribute_value(pAssociationMap, nullptr, "association", "userDefinedLangName", sUDLname, true);
+	if (pExist) return pExist;
+
+	// if it doesn't, then add it
 	tinyxml2::XMLElement* pAssoc = pAssociationMap->InsertNewChildElement("association");
 	if (pAssoc) {
 		pAssoc->SetAttribute("id", sFilename.c_str());
@@ -128,4 +134,63 @@ bool OverrideMapUpdater::experiment(void)
 	pOverrideMapXML->SaveFile(sOverMapPath().c_str());
 
 	return true;
+}
+
+// private: case-insensitive std::string equality check
+bool _string_insensitive_eq(std::string a, std::string b)
+{
+	std::string a_copy = "";
+	std::string b_copy = "";
+
+	// ignore conversion of int to char implicit in the <algorithm>std::transform, which I have no control over
+#pragma warning(push)
+#pragma warning(disable: 4244)
+	for (size_t i = 0; i < a.size(); i++) { a_copy += std::tolower(a[i]); }
+	for (size_t i = 0; i < b.size(); i++) { b_copy += std::tolower(b[i]); }
+#pragma warning(pop)
+	return a_copy == b_copy;
+}
+
+// private: case-insensitive std::string less-than check
+bool _string_insensitive_lt(std::string a, std::string b)
+{
+	std::string a_copy = "";
+	std::string b_copy = "";
+
+	// ignore conversion of int to char implicit in the <algorithm>std::transform, which I have no control over
+#pragma warning(push)
+#pragma warning(disable: 4244)
+	for (size_t i = 0; i < a.size(); i++) { a_copy += std::tolower(a[i]); }
+	for (size_t i = 0; i < b.size(); i++) { b_copy += std::tolower(b[i]); }
+#pragma warning(pop)
+	return a_copy < b_copy;
+}
+
+
+// look for an element, based on {Parent, FirstChild, or both} which is of a specific ElementType, having a specific AttributeName with specific AttributeValue
+tinyxml2::XMLElement* OverrideMapUpdater::_find_element_with_attribute_value(tinyxml2::XMLElement* pParent, tinyxml2::XMLElement* pFirst, std::string sElementType, std::string sAttributeName, std::string sAttributeValue, bool caseSensitive)
+{
+	if (!pParent && !pFirst) return nullptr;
+	tinyxml2::XMLElement* pMyParent = pParent ? pParent->ToElement() : pFirst->Parent()->ToElement();
+	tinyxml2::XMLElement* pFCE = pMyParent->FirstChildElement(sElementType.c_str());
+	if (!pFirst && !pFCE) return nullptr;
+	tinyxml2::XMLElement* pFoundElement = pFirst ? pFirst->ToElement() : pFCE->ToElement();
+	while (pFoundElement) {
+		// if this node has the right attribute pair, great!
+		if (caseSensitive) {
+			if (pFoundElement->Attribute(sAttributeName.c_str(), sAttributeValue.c_str()))
+				return pFoundElement;
+		}
+		else {
+			const char* cAttrValue = pFoundElement->Attribute(sAttributeName.c_str());
+			if (cAttrValue) {
+				if (_string_insensitive_eq(sAttributeValue, cAttrValue))
+					return pFoundElement;
+			}
+		}
+
+		// otherwise, move on to next
+		pFoundElement = pFoundElement->NextSiblingElement(sElementType.c_str());
+	}
+	return pFoundElement;
 }

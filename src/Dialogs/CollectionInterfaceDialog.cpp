@@ -393,7 +393,6 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 							if (pobjCI->ask_overwrite_if_exists(wsPath)) {
 								mapUacDelayed[wsURL] = wsPath;
 								total--;
-								// TODO: need to add a delayed-FL-ov map as well
 							}
 							else {
 								total--;
@@ -424,7 +423,6 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 									if (pobjCI->ask_overwrite_if_exists(xPath)) {
 										mapUacDelayed[xURL] = xPath;
 										total--;
-										// TODO: need to add a delayed-FL-ov map as well
 									}
 									else {
 										total--;
@@ -509,7 +507,6 @@ INT_PTR CALLBACK ciDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 								doUpdateOverrideMap = false;
 							}
 
-							//::MessageBox(hwndDlg, (std::wstring(L"cmd.exe ") + args).c_str(), L"TODO: UAC Command", MB_OK);
 							ShellExecute(hwndDlg, L"runas", L"cmd.exe", args.c_str(), NULL, SW_SHOWMINIMIZED);
 
 							::SendDlgItemMessage(hwndDlg, IDC_CI_PROGRESSBAR, PBM_SETPOS, 100, 0);
