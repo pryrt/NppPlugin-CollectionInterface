@@ -30,6 +30,8 @@ The **Download** button will download and install the UDL definition file (and t
 
 The progress bar near the bottom will be at 100% when the Download is complete.  Once you pick a different UDL, the progress bar resets to 0%.
 
+v1.3.0: If you include any FunctionList files, the plugin will ask if you want to update your `overrideMap.xml`, which will enable those functionLists automatically, rather than requiring you to manually edit that file and restart.
+
 ### AutoCompletion tab
 
 ![](.images/download_ac.png)
@@ -53,6 +55,8 @@ There are no buttons for downloading the "associated" files; if you want to down
 The **Download** button will download and install the FunctionList definition file.
 
 The progress bar near the bottom will be at 100% when the Download is complete.  Once you pick a different UDL, the progress bar resets to 0%.
+
+v1.3.0: If you include any FunctionList files, the plugin will ask if you want to update your `overrideMap.xml`, which will enable those functionLists automatically, rather than requiring you to manually edit that file and restart.
 
 ### Theme tab
 
